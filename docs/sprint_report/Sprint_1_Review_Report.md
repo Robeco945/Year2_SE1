@@ -30,6 +30,11 @@ In the Sprint Review Meeting 1, we have demonsstrated
 - Prepare for topic presentation
   
 ## Next Sprint Focus
+- Implementing Database
+- Integrate Unit Testing
+- Develope User Interface
+- Configure Code Coverage Testing
+- Prepare for Sprint Review
 
 ## A table to demonstrate the time spent by each memeber during the sprint
 | Member | Hours Spent | Contribution |
