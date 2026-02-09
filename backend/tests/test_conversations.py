@@ -8,13 +8,13 @@ def test_create_conversation(client: TestClient, test_user, test_user2):
     response = client.post(
         "/api/conversations/",
         json={
-            "type": "direct",
+            "type": "private",
             "participant_ids": [test_user.user_id, test_user2.user_id]
         }
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["type"] == "direct"
+    assert data["type"] == "private"
     assert "conversation_id" in data
 
 def test_create_conversation_invalid_user(client: TestClient, test_user):
@@ -22,7 +22,7 @@ def test_create_conversation_invalid_user(client: TestClient, test_user):
     response = client.post(
         "/api/conversations/",
         json={
-            "type": "direct",
+            "type": "private",
             "participant_ids": [test_user.user_id, 99999]
         }
     )

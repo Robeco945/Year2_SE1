@@ -6,17 +6,17 @@ import enum
 
 # conversation types
 class ConversationType(str, enum.Enum):
-    DIRECT = "direct"
+    PRIVATE = "private"
     GROUP = "group"
 
 # user table
 class User(Base):
-    __tablename__ = "user"
+    __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    email = Column(String, unique=True, index=True, nullable=False)
-    password_hash = Column(String, nullable=False)
+    username = Column(String(255), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # foreign key
@@ -30,10 +30,10 @@ class User(Base):
 
 # conversation table
 class Conversation(Base):
-    __tablename__ = "conversation"
+    __tablename__ = "conversations"
 
     conversation_id = Column(Integer, primary_key=True, index=True)
-    type = Column(Enum(ConversationType), default=ConversationType.DIRECT, nullable=False)
+    type = Column(Enum(ConversationType), default=ConversationType.PRIVATE, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # foreign key
@@ -47,12 +47,12 @@ class Conversation(Base):
 
 # conversation participant table
 class ConversationParticipant(Base):
-    __tablename__ = "conversationparticipant"
+    __tablename__ = "conversation_participants"
 
     conversation_id = Column(
-        Integer, ForeignKey("conversation.conversation_id"), primary_key=True
+        Integer, ForeignKey("conversations.conversation_id"), primary_key=True
     )
-    user_id = Column(Integer, ForeignKey("user.user_id"), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
     joined_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # foreign key
@@ -64,13 +64,13 @@ class ConversationParticipant(Base):
 
 # message table
 class Message(Base):
-    __tablename__ = "message"
+    __tablename__ = "messages"
 
     message_id = Column(Integer, primary_key=True, index=True)
-    content = Column(String, nullable=False)
+    content = Column(String(1000), nullable=False)
     sent_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    conversation_id = Column(Integer, ForeignKey("conversation.conversation_id"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("user.user_id"), nullable=False)
+    conversation_id = Column(Integer, ForeignKey("conversations.conversation_id"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
 
     # foreign key
     conversation = relationship("Conversation", back_populates="messages")

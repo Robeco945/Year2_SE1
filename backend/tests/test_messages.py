@@ -120,7 +120,7 @@ def test_get_messages_by_conversation(client: TestClient, test_conversation, tes
         db.add(msg)
     
     # create another conversation with messages to ensure filtering works
-    other_conv = Conversation(type="direct")
+    other_conv = Conversation(type="private")
     db.add(other_conv)
     db.flush()
     other_msg = Message(

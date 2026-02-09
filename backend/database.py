@@ -2,6 +2,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from typing import Generator
 import os
+from dotenv import load_dotenv
+
+# load .env
+load_dotenv()
 
 # get database using environment variable
 DATABASE_URL = os.getenv(

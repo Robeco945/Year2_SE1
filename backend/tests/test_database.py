@@ -179,7 +179,7 @@ class TestDatabaseSchema:
             
             # Create conversation
             conversation = models.Conversation(
-                type=models.ConversationType.DIRECT
+                type=models.ConversationType.PRIVATE
             )
             session.add(conversation)
             session.flush()
