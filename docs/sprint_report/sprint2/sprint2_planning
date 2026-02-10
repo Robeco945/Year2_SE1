@@ -1,0 +1,83 @@
+# Sprint Planning Report — Sprint 2
+
+## Sprint Number & Dates
+
+**Sprint:** Sprint 2  
+**Start Date:** 27 January 2026  
+**End Date:** 10 February 2026  
+
+Sprint duration: 2 weeks.
+
+---
+
+## Sprint Goal
+
+The goal of Sprint 2 is to establish the initial technical foundation of the project.
+
+This includes designing and implementing the relational database, setting up a Dockerized database environment, and integrating the database with the backend web application.  
+By the end of the sprint, the system should support basic data operations and provide a working backend connected to the database.
+
+---
+
+## Selected Product Backlog Items
+
+The following product backlog items were selected for Sprint 2:
+
+- Design of the Entity–Relationship Diagram (ERD)
+- Implementation of the relational database schema
+- Dockerized setup of the database environment
+- Backend integration with the database
+- Basic CRUD functionality for core entities
+- Initial backend testing and code coverage analysis
+- Basic project structure setup (backend and frontend folders)
+
+These items were selected to ensure a functional backend and data layer for further development.
+
+---
+
+## Planned Tasks / Breakdown
+
+The planned tasks for Sprint 2 include:
+
+- Create the Entity–Relationship Diagram (ERD)
+- Design and implement SQL schema based on the ERD
+- Set up MariaDB using Docker Compose
+- Create and populate seed data for development and testing
+- Integrate the database with the backend application (Python)
+- Implement backend API endpoints
+- Implement basic CRUD operations
+- Add initial unit tests and perform code coverage testing
+- Create basic frontend folder structure and initial landing page
+- Maintain and update the project repository on GitHub
+
+---
+
+## Team Capacity & Assumptions
+
+**Team Size:** 4 members  
+
+**Estimated Capacity:**  
+Approximately **8 hours per team member** for the duration of the sprint.
+
+**Assumptions:**
+- Team members are working alongside other courses
+- Some technologies (Docker, backend integration, testing tools) may require learning during the sprint
+- Planning and task allocation may be adjusted during the sprint as implementation progresses
+
+---
+
+## Definition of Done
+
+A task or backlog item is considered **done** when:
+
+- Database tables are created according to the schema
+- Relationships between entities are correctly implemented
+- Seed data can be successfully inserted
+- Backend application connects to the database without errors
+- CRUD operations work as expected
+- The database can be run using Docker
+- Code is committed and pushed to GitHub
+- Basic documentation or setup instructions are provided
+
+---
+
