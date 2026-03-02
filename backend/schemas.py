@@ -3,6 +3,23 @@ from datetime import datetime
 from typing import Optional, List
 
 
+# Auth Schemas
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
 # User Schemas
 class UserBase(BaseModel):
     username: str

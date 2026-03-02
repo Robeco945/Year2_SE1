@@ -6,8 +6,17 @@ import enum
 
 # conversation types
 class ConversationType(str, enum.Enum):
-    PRIVATE = "private"
-    GROUP = "group"
+    PRIVATE = "PRIVATE"
+    GROUP = "GROUP"
+
+    @classmethod
+    def _missing_(cls, value):
+        """Handle lowercase 'private' or 'group' coming from the DB because there has been an error with lowercase private and group when it is expecting uppercase."""
+        if isinstance(value, str):
+            for member in cls:
+                if member.value.upper() == value.upper():
+                    return member
+        return super()._missing_(value)
 
 # user table
 class User(Base):
@@ -33,7 +42,12 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     conversation_id = Column(Integer, primary_key=True, index=True)
-    type = Column(Enum(ConversationType), default=ConversationType.PRIVATE, nullable=False)
+# Change the Enum definition to include both cases in the allowed list
+    type = Column(
+        Enum("PRIVATE", "GROUP", "private", "group", name="conversation_type_enum"), 
+        default="PRIVATE", 
+        nullable=False
+    )
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     # foreign key

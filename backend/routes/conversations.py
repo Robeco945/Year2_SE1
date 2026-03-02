@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models
 import schemas
+from auth import get_current_user
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -106,6 +107,59 @@ def add_participant(conversation_id: int, user_id: int, db: Session = Depends(ge
     db.commit()
     db.refresh(participant)
     return participant
+
+# get messages in a conversation — path used by the frontend
+@router.get("/{conversation_id}/messages", response_model=list[schemas.MessageResponse])
+def get_conversation_messages(
+    conversation_id: int,
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Get all messages in a conversation"""
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.conversation_id == conversation_id
+    ).first()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    messages = (
+        db.query(models.Message)
+        .filter(models.Message.conversation_id == conversation_id)
+        .order_by(models.Message.sent_at)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return messages
+
+
+# send a message to a conversation — sender is the authenticated user
+@router.post("/{conversation_id}/messages", response_model=schemas.MessageResponse, status_code=201)
+def send_conversation_message(
+    conversation_id: int,
+    body: schemas.MessageBase,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Send a message in a conversation (sender is the authenticated user)"""
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.conversation_id == conversation_id
+    ).first()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    db_message = models.Message(
+        content=body.content,
+        conversation_id=conversation_id,
+        sender_id=current_user.user_id,
+    )
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
 
 # remove participant, removes a user from a conversation, checks for valid conversation and user IDs, checks if user is a participant before removing
 @router.delete("/{conversation_id}/participants/{user_id}", status_code=204)
