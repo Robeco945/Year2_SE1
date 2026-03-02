@@ -1,0 +1,80 @@
+# Sprint Review Report — Sprint 2
+
+## Sprint Goal
+
+The goal of Sprint 2 was to establish the initial technical foundation of the project by designing and implementing the database layer, integrating it with the backend web application, and ensuring that the system is runnable and testable.
+
+The sprint focused on setting up the database structure, backend API integration, containerization using Docker, and initial testing, including code coverage analysis, to prepare the project for further development.
+
+---
+
+## Completed User Stories / Tasks
+
+During Sprint 2, the following user stories and tasks were completed by the team:
+
+- Designed the Entity–Relationship Diagram (ERD)
+- Implemented the relational database schema
+- Created and populated seed data
+- Dockerized the database using Docker Compose
+- Integrated the database with the backend application
+- Implemented backend API endpoints
+- Performed basic CRUD operations on the database
+- Added unit tests for backend functionality
+- Performed code coverage testing to evaluate test completeness
+- Created the frontend folder and basic project structure
+- Implemented a simple landing page
+- Created unit testing files to test API calls and backend integration
+- Updated and maintained the project repository on GitHub
+
+---
+
+## Demo Summary
+
+During the sprint review, the team demonstrated:
+
+- The relational database structure and schema
+- Running the database using Docker
+- Database initialization and seed data loading
+- Execution of database queries
+- Backend integration with the database
+- Project structure, commits, and collaboration using GitHub
+
+The demo mainly focused on the database setup, backend integration, and testing-related aspects rather than user-facing functionality.
+
+---
+
+## What Went Well
+
+- Database schema and relationships were implemented successfully
+- Backend integration with the database worked as expected
+- Docker enabled a consistent and reproducible environment
+- Responsibilities were shared across team members
+- Unit tests and code coverage testing were completed
+- The core backend foundation was established within the sprint
+
+---
+
+## What Could Be Improved
+
+Sprint planning and task tracking could be improved.  
+Using a more structured planning approach and tools such as a Trello board could help with task distribution, progress tracking, and time estimation in future sprints.
+
+---
+
+## Next Sprint Focus
+
+The focus of the next sprint will be to develop a **fully working prototype** of the application.
+
+This includes implementing all required functionality so that the system can be used as a complete, functional program.  
+The following sprint after that will primarily focus on **polishing**, usability improvements, and refinement rather than core feature development.
+
+---
+
+## Time Spent per Team Member
+
+| Team Member     | Responsibility Focus                           | Time Spent (hours) |
+|-----------------|------------------------------------------------|--------------------|
+| Vadim Kotukhov  | Database design, backend integration           | 8                  |
+| Saarinen Iida   | Backend API, CRUD functionality                | 9                  |
+| Caretto Roberto | Frontend structure, basic UI, integration      | 7                  |
+| Chin Pei Wen    | Unit tests and code coverage testing           | 8                  |
