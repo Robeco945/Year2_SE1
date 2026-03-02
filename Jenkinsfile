@@ -1,54 +1,36 @@
 pipeline {
     agent any
-    environment {
-        PYTHON_ENV = 'venv'
-    }
+
     stages {
-        stage('Checkout Code') {
+
+        stage('Checkout') {
             steps {
-                git url: 'https://github.com/Robeco945/Year2_SE1.git', branch: 'main'
+                checkout scm
             }
         }
-        stage('Setup Python Environment') {
+
+        stage('Build Docker Image') {
             steps {
-                sh '''
-                python3 -m venv $PYTHON_ENV
-                source $PYTHON_ENV/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                '''
-            }
-        }
-        stage('Run Unit Tests') {
-            steps {
-                sh '''
-                source $PYTHON_ENV/bin/activate
-                pytest --junitxml=reports/test-results.xml --cov=yourpackage --cov-report=html:reports/coverage
-                '''
-            }
-            post {
-                always {
-                    junit 'reports/test-results.xml'
-                    publishHTML(target: [
-                        reportName: 'Coverage Report',
-                        reportDir: 'reports/coverage',
-                        reportFiles: 'index.html'
-                    ])
+                script {
+                    docker.build("messaging-backend-ci")
                 }
             }
         }
-        stage('Build Docker Image') {
+
+        stage('Run Tests') {
             steps {
-                sh 'docker build -t yourproject:latest .'
+                script {
+                    docker.image("messaging-backend-ci").inside {
+                        sh 'pytest --cov=. --cov-report=html --cov-report=xml --junitxml=pytest.xml'
+                    }
+                }
             }
         }
-    }
-    post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+
+        stage('Archive Coverage') {
+            steps {
+                archiveArtifacts artifacts: 'htmlcov/**', fingerprint: true
+            }
         }
     }
 }
