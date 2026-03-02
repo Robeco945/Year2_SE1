@@ -13,7 +13,7 @@ CREATE TABLE users (
 -- CONVERSATIONS
 CREATE TABLE conversations (
     conversation_id INT AUTO_INCREMENT PRIMARY KEY,
-    type ENUM('private', 'group') NOT NULL,
+    type ENUM('PRIVATE', 'GROUP') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

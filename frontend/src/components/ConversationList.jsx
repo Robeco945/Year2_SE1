@@ -10,7 +10,7 @@ export default function ConversationList({
     <div className="conversation-list">
       <div className="conversation-header">
         <h2>Messages</h2>
-        <button className="new-chat-btn" onClick={onCreateConversation} title="Start new conversation">
+        <button className="new-chat-btn" onClick={onCreateConversation} title="Start new conversation" style={{backgroundColor: '#9b2fff', color: '#fff', border: 'none', borderRadius: '50%', width: '24px', height: '24px', fontSize: '1.2rem', lineHeight: '20px', cursor: 'pointer'}}>
           +
         </button>
       </div>
@@ -26,29 +26,19 @@ export default function ConversationList({
         ) : (
           conversations.map((conv) => (
             <div
-              key={conv.id}
+              key={conv.conversation_id}
               className={`conversation-item ${
-                conv.id === activeConversationId ? 'active' : ''
+                conv.conversation_id === activeConversationId ? 'active' : ''
               }`}
-              onClick={() => onSelectConversation(conv.id)}
+              onClick={() => onSelectConversation(conv.conversation_id)}
             >
               <div className="conversation-info">
                 <h3 className="conversation-title">
-                  {conv.name || conv.participants.map((p) => p.name).join(', ')}
+                  Conversation #{conv.conversation_id}
                 </h3>
-                <p className="conversation-preview">
-                  {conv.lastMessage?.content || 'No messages yet'}
+                <p className="conversation-preview" style={{ fontSize: '0.8rem', color: '#888888' }}>
+                  {conv.type} &bull; {new Date(conv.created_at).toLocaleDateString()}
                 </p>
-              </div>
-              <div className="conversation-meta">
-                <span className="conversation-time">
-                  {conv.lastMessage
-                    ? new Date(conv.lastMessage.createdAt).toLocaleDateString()
-                    : ''}
-                </span>
-                {conv.unreadCount > 0 && (
-                  <span className="unread-badge">{conv.unreadCount}</span>
-                )}
               </div>
             </div>
           ))
@@ -57,3 +47,4 @@ export default function ConversationList({
     </div>
   )
 }
+

@@ -39,7 +39,7 @@ export const messageAPI = {
     api.get('/conversations'),
   
   createConversation: (participantIds) =>
-    api.post('/conversations', { participantIds }),
+    api.post('/conversations', { type: 'private', participant_ids: participantIds }),
   
   getConversation: (conversationId) =>
     api.get(`/conversations/${conversationId}`),

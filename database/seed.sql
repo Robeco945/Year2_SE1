@@ -24,11 +24,11 @@ INSERT INTO users (username, email, password_hash) VALUES
 
 -- CONVERSATIONS (5 total: private + group)
 INSERT INTO conversations (type) VALUES
-('private'),  -- id 1
-('private'),  -- id 2
-('group'),    -- id 3
-('group'),    -- id 4
-('private');  -- id 5
+('PRIVATE'),  -- id 1
+('PRIVATE'),  -- id 2
+('GROUP'),    -- id 3
+('GROUP'),    -- id 4
+('PRIVATE');  -- id 5
 
 -- CONVERSATION PARTICIPANTS
 
