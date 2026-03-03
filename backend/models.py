@@ -44,7 +44,7 @@ class Conversation(Base):
     conversation_id = Column(Integer, primary_key=True, index=True)
 # Change the Enum definition to include both cases in the allowed list
     type = Column(
-        Enum("PRIVATE", "GROUP", "private", "group", name="conversation_type_enum"), 
+        Enum(ConversationType, name="conversation_type_enum"), 
         default="PRIVATE", 
         nullable=False
     )
