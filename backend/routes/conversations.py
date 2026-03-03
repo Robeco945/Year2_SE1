@@ -13,7 +13,9 @@ router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 # create conversation, checks for valid participant IDs, creates conversation and adds participants
 def create_conversation(conv: schemas.ConversationCreate, db: Session = Depends(get_db)):
     """Create a new conversation"""
-    db_conversation = models.Conversation(type=conv.type)
+    db_conversation = models.Conversation(
+    	type=models.ConversationType(conv.type)
+    )
     db.add(db_conversation)
     db.flush()  # get the conversation_id without committing
     

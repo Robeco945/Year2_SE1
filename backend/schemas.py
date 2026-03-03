@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional, List
+from models import ConversationType
 
 
 # Auth Schemas
@@ -45,7 +46,7 @@ class UserResponse(UserBase):
 
 # Conversation Schemas
 class ConversationBase(BaseModel):
-    type: str
+    type: ConversationType
 
 
 class ConversationCreate(ConversationBase):

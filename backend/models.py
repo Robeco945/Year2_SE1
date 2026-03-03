@@ -45,7 +45,7 @@ class Conversation(Base):
 # Change the Enum definition to include both cases in the allowed list
     type = Column(
         Enum(ConversationType, name="conversation_type_enum"), 
-        default="PRIVATE", 
+        default=ConversationType.PRIVATE, 
         nullable=False
     )
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
