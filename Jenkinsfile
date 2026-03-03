@@ -9,28 +9,22 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Start Environment') {
             steps {
-                script {
-                    docker.build("messaging-backend-ci")
-                }
+                sh 'docker-compose up -d --build'
             }
         }
 
         stage('Run Tests') {
             steps {
-                script {
-                    docker.image("messaging-backend-ci").inside {
-                        sh 'pytest --cov=. --cov-report=html --cov-report=xml --junitxml=pytest.xml'
-                    }
-                }
+                sh 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
             }
         }
+    }
 
-        stage('Archive Coverage') {
-            steps {
-                archiveArtifacts artifacts: 'htmlcov/**', fingerprint: true
-            }
+    post {
+        always {
+            sh 'docker-compose down -v'
         }
     }
 }
