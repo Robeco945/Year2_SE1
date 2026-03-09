@@ -152,9 +152,7 @@ The system design includes the following diagrams:
 * ER Diagram
 * Use Case Diagram
 * Class Diagram
-  ![Class Diagram](docs/diagrams/class diagram.png)
 * Activity Diagram
-  ![Activity Diagram](docs/diagrams/activity diagram.png)
 
 These diagrams illustrate the structure and interactions between the system components.
 
