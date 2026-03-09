@@ -11,11 +11,9 @@ The system is built using a modern backend architecture with **FastAPI**, **Mari
 ## Features
 
 * User registration and login
-* Secure authentication using JWT tokens
 * Create private or group conversations
 * Send and receive messages
 * Message storage in a relational database
-* File attachment support (optional)
 * Containerized deployment using Docker
 
 ---
