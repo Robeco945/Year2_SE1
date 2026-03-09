@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import ConversationList from './components/ConversationList'
 import MessageView from './components/MessageView'
+import ProfileSettings from './components/ProfileSettings'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
-import { messageAPI, authAPI } from './services/api'
+import { messageAPI, authAPI, WS_BASE_URL } from './services/api'
+import { playNotificationSound } from './services/notification'
 import './index.css'
 
 // Protect routes that require login
@@ -23,13 +25,19 @@ function ChatApp() {
   const [showNewConv, setShowNewConv] = useState(false)
   const [newParticipant, setNewParticipant] = useState('')
   const [convError, setConvError] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
+  const [lastWsMessage, setLastWsMessage] = useState(null)
+
+  const wsRef = useRef(null)
+  const reconnectTimeoutRef = useRef(null)
+  const intentionalClose = useRef(false)
 
   const loadConversations = async () => {
     try {
       const res = await messageAPI.getConversations()
       setConversations(res.data || [])
     } catch {
-      // ignore polling errors silently
+      // ignore errors silently
     } finally {
       setLoadingConvs(false)
     }
@@ -40,18 +48,69 @@ function ChatApp() {
       const res = await authAPI.getCurrentUser()
       setCurrentUser(res.data)
     } catch {
-      // token invalid — force logout
       localStorage.removeItem('authToken')
       navigate('/login')
     }
   }
 
+  // Initial data load (once on mount)
   useEffect(() => {
     loadCurrentUser()
     loadConversations()
-    const interval = setInterval(loadConversations, 8000)
-    return () => clearInterval(interval)
   }, [])
+
+  // Open WebSocket once we know the current user's ID
+  useEffect(() => {
+    if (!currentUser?.user_id) return
+
+    const token = localStorage.getItem('authToken')
+    if (!token) return
+
+    const userId = currentUser.user_id
+    intentionalClose.current = false
+
+    const connect = () => {
+      const ws = new WebSocket(`${WS_BASE_URL}/ws/${userId}?token=${token}`)
+      wsRef.current = ws
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data)
+          setLastWsMessage(msg)
+        } catch {
+          // ignore malformed frames
+        }
+      }
+
+      ws.onclose = () => {
+        if (!intentionalClose.current) {
+          // Reconnect after 3 s if the drop was not intentional (e.g. logout)
+          reconnectTimeoutRef.current = setTimeout(connect, 3000)
+        }
+      }
+
+      ws.onerror = () => ws.close()
+    }
+
+    connect()
+
+    return () => {
+      intentionalClose.current = true
+      clearTimeout(reconnectTimeoutRef.current)
+      wsRef.current?.close()
+    }
+  }, [currentUser?.user_id])
+
+  // Play a notification when a message arrives for a background conversation
+  useEffect(() => {
+    if (!lastWsMessage || !currentUser) return
+    if (
+      lastWsMessage.sender_id !== currentUser.user_id &&
+      lastWsMessage.conversation_id !== activeId
+    ) {
+      playNotificationSound()
+    }
+  }, [lastWsMessage])
 
   const handleCreateConversation = async () => {
     const participantId = parseInt(newParticipant, 10)
@@ -74,6 +133,9 @@ function ChatApp() {
   }
 
   const handleLogout = async () => {
+    intentionalClose.current = true
+    clearTimeout(reconnectTimeoutRef.current)
+    wsRef.current?.close()
     await authAPI.logout()
     navigate('/login')
   }
@@ -85,15 +147,42 @@ function ChatApp() {
       <div>
         <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem' }}>ChatApp</h2>
         {currentUser && (
-          <p style={{ fontSize: '0.85rem', opacity: 0.9 }}>
-            Logged in as: <strong>{currentUser.username || currentUser.user_id}</strong>
-          </p>
+          <div
+            style={styles.profileCard}
+            onClick={() => setShowSettings(true)}
+            title="Open settings"
+          >
+            <div style={styles.sidebarAvatar}>
+              {currentUser.profile_picture_url ? (
+                <img src={currentUser.profile_picture_url} alt="" style={styles.sidebarAvatarImg} />
+              ) : (
+                <span style={styles.sidebarAvatarInitial}>
+                  {(currentUser.username || '?')[0].toUpperCase()}
+                </span>
+              )}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '0.9rem', fontWeight: 600, margin: 0 }}>
+                {currentUser.username || currentUser.user_id}
+              </p>
+              {currentUser.bio && (
+                <p style={{ fontSize: '0.75rem', margin: '2px 0 0', opacity: 0.8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {currentUser.bio}
+                </p>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      <button onClick={handleLogout} style={styles.logoutBtn}>
-        Log out
-      </button>
+      <div style={styles.sidebarActions}>
+        <button onClick={() => setShowSettings(true)} style={styles.settingsBtn}>
+          ⚙ Settings
+        </button>
+        <button onClick={handleLogout} style={styles.logoutBtn}>
+          Log out
+        </button>
+      </div>
     </aside>
 
     {/* RIGHT COLUMN: Conversation List + Messages */}
@@ -108,7 +197,7 @@ function ChatApp() {
           onCreateConversation={() => setShowNewConv(true)}
         />
       )}
-      <MessageView conversationId={activeId} currentUser={currentUser} />
+      <MessageView conversationId={activeId} currentUser={currentUser} wsMessage={lastWsMessage} />
     </main>
 
     {/* New conversation modal */}
@@ -130,6 +219,15 @@ function ChatApp() {
           </div>
         </div>
       </div>
+    )}
+
+    {/* Profile settings modal */}
+    {showSettings && (
+      <ProfileSettings
+        currentUser={currentUser}
+        onClose={() => setShowSettings(false)}
+        onProfileUpdated={loadCurrentUser}
+      />
     )}
   </div>
 )
@@ -180,12 +278,60 @@ const styles = {
     background: 'rgba(255,255,255,0.2)',
     border: 'none',
     color: '#fff',
-    padding: '0.75rem',
+    padding: '0.65rem',
     borderRadius: '6px',
     cursor: 'pointer',
-    width: '100%',            // Makes button fill the sidebar width
+    width: '100%',
     fontWeight: '600',
     transition: 'background 0.2s',
+  },
+  settingsBtn: {
+    background: 'rgba(255,255,255,0.12)',
+    border: 'none',
+    color: '#fff',
+    padding: '0.65rem',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    width: '100%',
+    fontWeight: '500',
+    transition: 'background 0.2s',
+    marginBottom: '0.5rem',
+    fontSize: '0.9rem',
+  },
+  sidebarActions: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  profileCard: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    padding: '0.6rem',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'background 0.2s',
+    marginTop: '0.5rem',
+  },
+  sidebarAvatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: 'rgba(255,255,255,0.25)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    flexShrink: 0,
+  },
+  sidebarAvatarImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  sidebarAvatarInitial: {
+    color: '#fff',
+    fontSize: '1.1rem',
+    fontWeight: 600,
   },
   // Container for the rest of the chat UI
   contentArea: {

@@ -35,9 +35,22 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
 
 
+class ProfileUpdate(BaseModel):
+    username: Optional[str] = None
+    bio: Optional[str] = None
+    profile_picture_url: Optional[str] = None
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+
 class UserResponse(UserBase):
     user_id: int
     created_at: datetime
+    bio: Optional[str] = None
+    profile_picture_url: Optional[str] = None
 
     class Config:
         from_attributes = True
