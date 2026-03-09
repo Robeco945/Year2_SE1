@@ -4,6 +4,7 @@ from database import get_db
 import models
 import schemas
 from auth import get_current_user
+from websocket_manager import manager
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -13,9 +14,14 @@ router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 # create conversation, checks for valid participant IDs, creates conversation and adds participants
 def create_conversation(conv: schemas.ConversationCreate, db: Session = Depends(get_db)):
     """Create a new conversation"""
-    db_conversation = models.Conversation(
-    	type=models.ConversationType(conv.type)
-    )
+    # enforce exactly 2 participants for private conversations
+    if conv.type.upper() == "PRIVATE" and len(conv.participant_ids) != 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Private conversations must have exactly 2 participants"
+        )
+
+    db_conversation = models.Conversation(type=conv.type)
     db.add(db_conversation)
     db.flush()  # get the conversation_id without committing
     
@@ -100,6 +106,17 @@ def add_participant(conversation_id: int, user_id: int, db: Session = Depends(ge
     
     if existing:
         raise HTTPException(status_code=400, detail="User already in conversation")
+
+    # prevent adding more than 2 participants to a private conversation
+    if conversation.type.upper() == "PRIVATE":
+        participant_count = db.query(models.ConversationParticipant).filter(
+            models.ConversationParticipant.conversation_id == conversation_id
+        ).count()
+        if participant_count >= 2:
+            raise HTTPException(
+                status_code=400,
+                detail="Private conversations cannot have more than 2 participants"
+            )
     
     participant = models.ConversationParticipant(
         conversation_id=conversation_id,
@@ -139,7 +156,7 @@ def get_conversation_messages(
 
 # send a message to a conversation — sender is the authenticated user
 @router.post("/{conversation_id}/messages", response_model=schemas.MessageResponse, status_code=201)
-def send_conversation_message(
+async def send_conversation_message(
     conversation_id: int,
     body: schemas.MessageBase,
     db: Session = Depends(get_db),
@@ -160,6 +177,25 @@ def send_conversation_message(
     db.add(db_message)
     db.commit()
     db.refresh(db_message)
+
+    # Push the new message to the other participant if they are connected via WS
+    other = (
+        db.query(models.ConversationParticipant)
+        .filter(
+            models.ConversationParticipant.conversation_id == conversation_id,
+            models.ConversationParticipant.user_id != current_user.user_id,
+        )
+        .first()
+    )
+    if other:
+        await manager.send_to_user(other.user_id, {
+            "message_id": db_message.message_id,
+            "conversation_id": db_message.conversation_id,
+            "sender_id": db_message.sender_id,
+            "content": db_message.content,
+            "sent_at": db_message.sent_at.isoformat(),
+        })
+
     return db_message
 
 

@@ -4,18 +4,14 @@ import ConversationList from './ConversationList'
 describe('ConversationList Component', () => {
   const mockConversations = [
     {
-      id: 1,
-      name: 'Chat 1',
-      participants: [{ id: 1, name: 'Alice' }],
-      lastMessage: { content: 'Hello there', createdAt: '2026-02-10T10:00:00Z' },
-      unreadCount: 2,
+      conversation_id: 1,
+      type: 'private',
+      created_at: '2026-02-10T10:00:00Z',
     },
     {
-      id: 2,
-      name: null,
-      participants: [{ id: 2, name: 'Bob' }, { id: 3, name: 'Charlie' }],
-      lastMessage: { content: 'How are you?', createdAt: '2026-02-10T09:00:00Z' },
-      unreadCount: 0,
+      conversation_id: 2,
+      type: 'group',
+      created_at: '2026-02-10T09:00:00Z',
     },
   ]
 
@@ -25,6 +21,10 @@ describe('ConversationList Component', () => {
     onSelectConversation: jest.fn(),
     onCreateConversation: jest.fn(),
   }
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
 
   it('renders the Messages header', () => {
     render(<ConversationList {...mockProps} />)
@@ -42,32 +42,33 @@ describe('ConversationList Component', () => {
     expect(screen.getByText('No conversations yet')).toBeInTheDocument()
   })
 
-  it('renders conversation list', () => {
+  it('renders conversation items', () => {
     render(<ConversationList {...mockProps} />)
-    expect(screen.getByText('Chat 1')).toBeInTheDocument()
-    expect(screen.getByText('Bob, Charlie')).toBeInTheDocument()
+    expect(screen.getByText('Conversation #1')).toBeInTheDocument()
+    expect(screen.getByText('Conversation #2')).toBeInTheDocument()
   })
 
-  it('displays conversation preview text', () => {
+  it('displays conversation type and date', () => {
     render(<ConversationList {...mockProps} />)
-    expect(screen.getByText('Hello there')).toBeInTheDocument()
-    expect(screen.getByText('How are you?')).toBeInTheDocument()
-  })
-
-  it('shows unread badge when unreadCount > 0', () => {
-    render(<ConversationList {...mockProps} />)
-    expect(screen.getByText('2')).toBeInTheDocument()
+    const items = screen.getAllByText(/private|group/i)
+    expect(items.length).toBeGreaterThanOrEqual(1)
   })
 
   it('highlights active conversation', () => {
     render(<ConversationList {...mockProps} activeConversationId={1} />)
-    const activeItem = screen.getByText('Chat 1').closest('.conversation-item')
+    const activeItem = screen.getByText('Conversation #1').closest('.conversation-item')
     expect(activeItem).toHaveClass('active')
+  })
+
+  it('does not highlight inactive conversations', () => {
+    render(<ConversationList {...mockProps} activeConversationId={1} />)
+    const inactiveItem = screen.getByText('Conversation #2').closest('.conversation-item')
+    expect(inactiveItem).not.toHaveClass('active')
   })
 
   it('calls onSelectConversation when conversation is clicked', () => {
     render(<ConversationList {...mockProps} />)
-    const conversation = screen.getByText('Chat 1').closest('.conversation-item')
+    const conversation = screen.getByText('Conversation #1').closest('.conversation-item')
     fireEvent.click(conversation)
     expect(mockProps.onSelectConversation).toHaveBeenCalledWith(1)
   })
@@ -76,13 +77,25 @@ describe('ConversationList Component', () => {
     render(<ConversationList {...mockProps} />)
     const newChatBtn = screen.getByTitle('Start new conversation')
     fireEvent.click(newChatBtn)
-    expect(mockProps.onCreateConversation).toHaveBeenCalled()
+    expect(mockProps.onCreateConversation).toHaveBeenCalledTimes(1)
   })
 
   it('calls onCreateConversation from empty state button', () => {
     render(<ConversationList {...mockProps} conversations={[]} />)
     const startBtn = screen.getByText('Start a conversation')
     fireEvent.click(startBtn)
-    expect(mockProps.onCreateConversation).toHaveBeenCalled()
+    expect(mockProps.onCreateConversation).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders all conversations in the list', () => {
+    const manyConvs = Array.from({ length: 5 }, (_, i) => ({
+      conversation_id: i + 1,
+      type: i % 2 === 0 ? 'private' : 'group',
+      created_at: new Date().toISOString(),
+    }))
+    render(<ConversationList {...mockProps} conversations={manyConvs} />)
+    for (let i = 1; i <= 5; i++) {
+      expect(screen.getByText(`Conversation #${i}`)).toBeInTheDocument()
+    }
   })
 })

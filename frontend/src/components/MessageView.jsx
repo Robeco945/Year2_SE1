@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { messageAPI } from '../services/api'
 
-export default function MessageView({ conversationId, currentUser }) {
+export default function MessageView({ conversationId, currentUser, wsMessage }) {
   const [messages, setMessages] = useState([])
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -21,13 +21,24 @@ export default function MessageView({ conversationId, currentUser }) {
     }
   }
 
+  // Load full history when switching conversations (no polling)
   useEffect(() => {
     if (!conversationId) return
     setLoading(true)
+    setMessages([])
     loadMessages()
-    const interval = setInterval(loadMessages, 5000)
-    return () => clearInterval(interval)
   }, [conversationId])
+
+  // Append incoming WebSocket message if it belongs to the active conversation
+  useEffect(() => {
+    if (!wsMessage) return
+    if (wsMessage.conversation_id !== conversationId) return
+    setMessages((prev) => {
+      // Deduplicate by message_id in case of race with initial HTTP load
+      if (prev.some((m) => m.message_id === wsMessage.message_id)) return prev
+      return [...prev, wsMessage]
+    })
+  }, [wsMessage])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -38,9 +49,10 @@ export default function MessageView({ conversationId, currentUser }) {
     if (!content.trim()) return
     setSending(true)
     try {
-      await messageAPI.sendMessage(conversationId, content.trim())
+      const res = await messageAPI.sendMessage(conversationId, content.trim())
+      // Append the sent message immediately — no need for a full reload
+      setMessages((prev) => [...prev, res.data])
       setContent('')
-      await loadMessages()
     } catch {
       setError('Failed to send message')
     } finally {

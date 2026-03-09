@@ -47,3 +47,41 @@ def login(credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
 def get_me(current_user: models.User = Depends(get_current_user)):
     """Return the currently authenticated user"""
     return current_user
+
+
+@router.put("/profile", response_model=schemas.UserResponse)
+def update_profile(
+    profile: schemas.ProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Update the current user's profile (name, bio, profile picture)"""
+    if profile.username is not None:
+        existing = db.query(models.User).filter(
+            models.User.username == profile.username,
+            models.User.user_id != current_user.user_id,
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Username already in use")
+        current_user.username = profile.username
+    if profile.bio is not None:
+        current_user.bio = profile.bio
+    if profile.profile_picture_url is not None:
+        current_user.profile_picture_url = profile.profile_picture_url
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.put("/password")
+def change_password(
+    body: schemas.PasswordChange,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """Change the current user's password"""
+    if not verify_password(body.current_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    current_user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"message": "Password updated successfully"}

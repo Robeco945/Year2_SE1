@@ -1,9 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from contextlib import asynccontextmanager
 from database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from routes import users, conversations, messages, auth as auth_routes
+from websocket_manager import manager
+from auth import SECRET_KEY, ALGORITHM
+from jose import JWTError, jwt
 import os
 
 @asynccontextmanager
@@ -52,7 +55,37 @@ def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
 
-# run the app with uvicorn when executed directly
+
+# WebSocket endpoint — one persistent connection per authenticated user
+@app.websocket("/ws/{user_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    user_id: int,
+    token: str = Query(...),
+):
+    """Accept and hold a WebSocket connection for a specific user.
+
+    The JWT token is passed as a query parameter because browsers cannot set
+    custom HTTP headers during the WebSocket handshake.
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        token_user_id = int(payload.get("sub", -1))
+    except (JWTError, ValueError):
+        await websocket.close(code=4001)
+        return
+
+    if token_user_id != user_id:
+        await websocket.close(code=4001)
+        return
+
+    await manager.connect(user_id, websocket)
+    try:
+        # Hold the connection open; the server only pushes TO the client.
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(user_id)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

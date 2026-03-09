@@ -2,6 +2,11 @@ import axios from 'axios'
 
 const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:8000/api'
 
+// Derive WebSocket base URL from the HTTP base URL:
+//   http://host/api  →  ws://host
+//   https://host/api →  wss://host
+export const WS_BASE_URL = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api$/, '')
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
@@ -60,6 +65,12 @@ export const authAPI = {
   
   getCurrentUser: () =>
     api.get('/auth/me'),
+  
+  updateProfile: (data) =>
+    api.put('/auth/profile', data),
+  
+  changePassword: (currentPassword, newPassword) =>
+    api.put('/auth/password', { current_password: currentPassword, new_password: newPassword }),
   
   logout: () => {
     localStorage.removeItem('authToken')
