@@ -8,13 +8,13 @@ def test_create_conversation(client: TestClient, test_user, test_user2):
     response = client.post(
         "/api/conversations/",
         json={
-            "type": "private",
+            "type": "PRIVATE",
             "participant_ids": [test_user.user_id, test_user2.user_id]
         }
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["type"] == "private"
+    assert data["type"] == "PRIVATE"
     assert "conversation_id" in data
 
 def test_create_conversation_invalid_user(client: TestClient, test_user):
@@ -22,7 +22,7 @@ def test_create_conversation_invalid_user(client: TestClient, test_user):
     response = client.post(
         "/api/conversations/",
         json={
-            "type": "private",
+            "type": "PRIVATE",
             "participant_ids": [test_user.user_id, 99999]
         }
     )
@@ -78,7 +78,7 @@ def test_get_participants_empty_conversation(client: TestClient, db):
     """should return 404 when conversation has no participants"""
     # create conversation without participants
     from models import Conversation
-    conversation = Conversation(type="group")
+    conversation = Conversation(type="GROUP")
     db.add(conversation)
     db.commit()
     
