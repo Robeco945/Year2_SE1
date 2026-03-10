@@ -81,27 +81,28 @@ def test_get_participants_empty_conversation(client: TestClient, db):
     conversation = Conversation(type="GROUP")
     db.add(conversation)
     db.commit()
-    
     response = client.get(f"/api/conversations/{conversation.conversation_id}/participants")
     assert response.status_code == 404
 
-def test_add_participant_group_conversation(client: TestClient, test_conversation, db):
-    from models import User
-
+def test_add_participant_group_conversation(client: TestClient, db):
+    from models import User, Conversation
+    # create group conversation
+    conversation = Conversation(type="GROUP")
+    db.add(conversation)
+    db.commit()
+    db.refresh(conversation)
+    # create new user
     new_user = User(
         username="newparticipant",
         email="newpart@example.com",
         password_hash="hashed"
     )
-
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-
     response = client.post(
-        f"/api/conversations/{test_conversation.conversation_id}/participants/{new_user.user_id}"
+        f"/api/conversations/{conversation.conversation_id}/participants/{new_user.user_id}"
     )
-
     assert response.status_code == 201
 
 def test_private_conversation_max_two_participants(client: TestClient, test_conversation, db):
