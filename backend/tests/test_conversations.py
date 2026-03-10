@@ -85,7 +85,7 @@ def test_get_participants_empty_conversation(client: TestClient, db):
     response = client.get(f"/api/conversations/{conversation.conversation_id}/participants")
     assert response.status_code == 404
 
-def test_add_participant_group_conversation(client: TestClient, group_conversation, db):
+def test_add_participant_group_conversation(client: TestClient, test_conversation, db):
     from models import User
 
     new_user = User(
@@ -99,7 +99,7 @@ def test_add_participant_group_conversation(client: TestClient, group_conversati
     db.refresh(new_user)
 
     response = client.post(
-        f"/api/conversations/{group_conversation.conversation_id}/participants/{new_user.user_id}"
+        f"/api/conversations/{test_conversation.conversation_id}/participants/{new_user.user_id}"
     )
 
     assert response.status_code == 201
