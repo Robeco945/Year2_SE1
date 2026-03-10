@@ -15,7 +15,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'docker compose up -d --build'
                     } else {
-                        bat 'docker compose up -d --build'
+                        bat 'docker-compose up -d --build'
                     }
                 }
             }
@@ -27,7 +27,7 @@ pipeline {
                     if (isUnix()) {
                         sh 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
                     } else {
-                        bat 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
+                        bat 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
                     }
                 }
             }
@@ -41,7 +41,7 @@ pipeline {
                     } else {
                         // Fix for Windows: two separate commands instead of $() substitution
                         bat '''
-                            FOR /F "tokens=*" %%i IN ('docker compose ps -q backend') DO (
+                            FOR /F "tokens=*" %%i IN ('docker-compose ps -q backend') DO (
                                 docker cp %%i:/app/htmlcov ./htmlcov
                             )
                         '''
@@ -64,10 +64,11 @@ pipeline {
                 if (isUnix()) {
                     sh 'docker compose down -v'
                 } else {
-                    bat 'docker compose down -v'
+                    bat 'docker-compose down -v'
                 }
             }
         }
     }
 
 }
+
