@@ -85,23 +85,44 @@ def test_get_participants_empty_conversation(client: TestClient, db):
     response = client.get(f"/api/conversations/{conversation.conversation_id}/participants")
     assert response.status_code == 404
 
-def test_add_participant(client: TestClient, test_conversation, db):
-    """should add a new participant to conversation"""
-    # create a third user
+def test_add_participant_group_conversation(client: TestClient, group_conversation, db):
     from models import User
+
     new_user = User(
         username="newparticipant",
         email="newpart@example.com",
         password_hash="hashed"
     )
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    
+
+    response = client.post(
+        f"/api/conversations/{group_conversation.conversation_id}/participants/{new_user.user_id}"
+    )
+
+    assert response.status_code == 201
+
+def test_private_conversation_max_two_participants(client: TestClient, test_conversation, db):
+    from models import User
+
+    new_user = User(
+        username="thirduser",
+        email="third@example.com",
+        password_hash="hashed"
+    )
+
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
     response = client.post(
         f"/api/conversations/{test_conversation.conversation_id}/participants/{new_user.user_id}"
     )
-    assert response.status_code == 201
+
+    assert response.status_code == 400
+    assert "Private conversations cannot have more than 2 participants" in response.json()["detail"]
 
 def test_add_participant_duplicate(client: TestClient, test_conversation, test_user):
     """should fail when adding user who is already a participant"""
