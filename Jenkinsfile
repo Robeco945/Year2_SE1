@@ -13,7 +13,7 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker-compose up -d --build'
+                        sh 'docker compose up -d --build'
                     } else {
                         bat 'docker-compose up -d --build'
                     }
@@ -25,7 +25,7 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
+                        sh 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
                     } else {
                         bat 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
                     }
@@ -37,7 +37,7 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker cp $(docker-compose ps -q backend):/app/htmlcov ./htmlcov'
+                        sh 'docker cp $(docker compose ps -q backend):/app/htmlcov ./htmlcov'
                     } else {
                         // Fix for Windows: two separate commands instead of $() substitution
                         bat '''
@@ -62,11 +62,13 @@ pipeline {
         always {
             script {
                 if (isUnix()) {
-                    sh 'docker-compose down -v'
+                    sh 'docker compose down -v'
                 } else {
                     bat 'docker-compose down -v'
                 }
             }
         }
     }
+
 }
+
