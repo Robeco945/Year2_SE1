@@ -46,24 +46,29 @@ The application follows a layered architecture:
 ## Project Structure
 
 ```
-messaging-app/
-│
+project/
 ├── backend/
-│   ├── main.py
-│   ├── database.py
-│   ├── models/
-│   │   ├── user.py
-│   │   ├── conversation.py
-│   │   └── message.py
-│   │
-│   ├── routes/
-│   │   ├── users.py
-│   │   ├── conversations.py
-│   │   └── messages.py
-│
-├── docker-compose.yml
-├── requirements.txt
-└── README.md
+│   ├── routes/          # API endpoints (auth, users, messages, conversations)
+│   ├── tests/           # pytest test files
+│   ├── main.py          # FastAPI app entry point
+│   ├── models.py        # SQLAlchemy database models
+│   ├── schemas.py       # Pydantic request/response schemas
+│   ├── database.py      # Database connection setup
+│   └── requirements.txt
+├── frontend/
+│   ├── src/
+│   │   ├── components/  # ConversationList, MessageView, ProfileSettings
+│   │   ├── pages/       # LoginPage, SignupPage
+│   │   └── services/    # API calls
+│   ├── Dockerfile
+│   └── nginx.conf
+├── database/
+│   ├── schema.sql
+│   └── seed.sql
+├── docs/                # Diagrams and sprint reports
+├── Dockerfile           # Backend Dockerfile
+├── Jenkinsfile
+└── docker-compose.yml
 ```
 
 ---
@@ -108,7 +113,7 @@ http://localhost:8000/docs
 Build and start the containers:
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 This will start:
