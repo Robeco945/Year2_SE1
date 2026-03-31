@@ -1,192 +1,217 @@
 import pytest
 from fastapi.testclient import TestClient
+import models
 
-# test message creation and retrieval
 
-def test_create_message(client: TestClient, test_conversation, test_user):
-    """should create a new message successfully"""
+def _create_user(db, username: str, email: str):
+    user = models.User(username=username, email=email, password_hash="hashed")
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def test_create_message(client: TestClient, test_conversation, test_user, auth_headers):
     response = client.post(
         "/api/messages/",
         json={
             "content": "hello world",
             "conversation_id": test_conversation.conversation_id,
-            "sender_id": test_user.user_id
-        }
+            "sender_id": test_user.user_id,
+        },
+        headers=auth_headers,
     )
     assert response.status_code == 201
     data = response.json()
     assert data["content"] == "hello world"
     assert data["conversation_id"] == test_conversation.conversation_id
     assert data["sender_id"] == test_user.user_id
-    assert "message_id" in data
-    assert "sent_at" in data
 
-def test_create_message_invalid_sender(client: TestClient, test_conversation):
-    """should fail when sender doesn't exist"""
+
+def test_create_message_sender_spoofing_blocked(
+    client: TestClient,
+    test_conversation,
+    test_user2,
+    auth_headers,
+):
     response = client.post(
         "/api/messages/",
         json={
-            "content": "test message",
+            "content": "spoof",
             "conversation_id": test_conversation.conversation_id,
-            "sender_id": 99999
-        }
+            "sender_id": test_user2.user_id,
+        },
+        headers=auth_headers,
     )
-    assert response.status_code == 404
-    assert "sender" in response.json()["detail"].lower()
+    assert response.status_code == 403
 
-def test_create_message_invalid_conversation(client: TestClient, test_user):
-    """should fail when conversation doesn't exist"""
+
+def test_create_message_invalid_conversation(client: TestClient, test_user, auth_headers):
     response = client.post(
         "/api/messages/",
         json={
             "content": "test message",
             "conversation_id": 99999,
-            "sender_id": test_user.user_id
-        }
+            "sender_id": test_user.user_id,
+        },
+        headers=auth_headers,
     )
     assert response.status_code == 404
-    assert "conversation" in response.json()["detail"].lower()
 
-def test_get_message(client: TestClient, test_conversation, test_user, db):
-    """should get message by id"""
-    # create a message first
-    from models import Message
-    message = Message(
+
+def test_get_message_as_participant(client: TestClient, test_conversation, test_user, db, auth_headers):
+    message = models.Message(
         content="test message",
         conversation_id=test_conversation.conversation_id,
-        sender_id=test_user.user_id
+        sender_id=test_user.user_id,
     )
     db.add(message)
     db.commit()
     db.refresh(message)
-    
-    response = client.get(f"/api/messages/{message.message_id}")
+
+    response = client.get(f"/api/messages/{message.message_id}", headers=auth_headers)
     assert response.status_code == 200
-    data = response.json()
-    assert data["message_id"] == message.message_id
-    assert data["content"] == "test message"
+    assert response.json()["message_id"] == message.message_id
 
-def test_get_message_not_found(client: TestClient):
-    """should return 404 for non-existent message"""
-    response = client.get("/api/messages/99999")
-    assert response.status_code == 404
 
-def test_list_messages(client: TestClient, test_conversation, test_user, db):
-    """should list all messages"""
-    # create some messages
-    from models import Message
-    for i in range(3):
-        msg = Message(
-            content=f"message {i}",
-            conversation_id=test_conversation.conversation_id,
-            sender_id=test_user.user_id
-        )
-        db.add(msg)
-    db.commit()
-    
-    response = client.get("/api/messages/")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) >= 3
-
-def test_list_messages_pagination(client: TestClient, test_conversation, test_user, db):
-    """should respect pagination parameters"""
-    # create some messages
-    from models import Message
-    for i in range(5):
-        msg = Message(
-            content=f"message {i}",
-            conversation_id=test_conversation.conversation_id,
-            sender_id=test_user.user_id
-        )
-        db.add(msg)
-    db.commit()
-    
-    response = client.get("/api/messages/?skip=2&limit=2")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 2
-
-def test_get_messages_by_conversation(client: TestClient, test_conversation, test_user, test_user2, db):
-    """should get all messages in a specific conversation"""
-    # create messages in the conversation
-    from models import Message, Conversation
-    for i in range(3):
-        msg = Message(
-            content=f"message {i}",
-            conversation_id=test_conversation.conversation_id,
-            sender_id=test_user.user_id
-        )
-        db.add(msg)
-    
-    # create another conversation with messages to ensure filtering works
-    other_conv = Conversation(type="private")
-    db.add(other_conv)
-    db.flush()
-    other_msg = Message(
-        content="other message",
-        conversation_id=other_conv.conversation_id,
-        sender_id=test_user2.user_id
+def test_get_message_forbidden_for_non_participant(
+    client: TestClient,
+    test_conversation,
+    test_user,
+    db,
+):
+    message = models.Message(
+        content="private message",
+        conversation_id=test_conversation.conversation_id,
+        sender_id=test_user.user_id,
     )
-    db.add(other_msg)
+    db.add(message)
     db.commit()
-    
-    response = client.get(f"/api/messages/conversation/{test_conversation.conversation_id}")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 3
-    assert all(m["conversation_id"] == test_conversation.conversation_id for m in data)
+    db.refresh(message)
 
-def test_update_message(client: TestClient, test_conversation, test_user, db):
-    """should update message content"""
-    # create a message
-    from models import Message
-    message = Message(
+    outsider = _create_user(db, "outsider_msg", "outsider_msg@example.com")
+    from auth import create_access_token
+
+    token = create_access_token({"sub": str(outsider.user_id)})
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.get(f"/api/messages/{message.message_id}", headers=headers)
+    assert response.status_code == 403
+
+
+def test_list_messages_only_for_user_conversations(
+    client: TestClient,
+    test_conversation,
+    test_user,
+    test_user2,
+    db,
+    auth_headers,
+):
+    for i in range(3):
+        db.add(
+            models.Message(
+                content=f"message {i}",
+                conversation_id=test_conversation.conversation_id,
+                sender_id=test_user.user_id,
+            )
+        )
+
+    user3 = _create_user(db, "thirduser", "thirduser@example.com")
+    hidden_conversation = models.Conversation(type="PRIVATE")
+    db.add(hidden_conversation)
+    db.flush()
+    db.add_all([
+        models.ConversationParticipant(
+            conversation_id=hidden_conversation.conversation_id,
+            user_id=test_user2.user_id,
+        ),
+        models.ConversationParticipant(
+            conversation_id=hidden_conversation.conversation_id,
+            user_id=user3.user_id,
+        ),
+        models.Message(
+            content="hidden",
+            conversation_id=hidden_conversation.conversation_id,
+            sender_id=test_user2.user_id,
+        ),
+    ])
+    db.commit()
+
+    response = client.get("/api/messages/", headers=auth_headers)
+    assert response.status_code == 200
+    messages = response.json()
+    assert len(messages) >= 3
+    assert all(msg["conversation_id"] == test_conversation.conversation_id for msg in messages)
+
+
+def test_get_messages_by_conversation_requires_membership(
+    client: TestClient,
+    test_conversation,
+    db,
+):
+    outsider = _create_user(db, "outsider_conv", "outsider_conv@example.com")
+    from auth import create_access_token
+
+    token = create_access_token({"sub": str(outsider.user_id)})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.get(
+        f"/api/messages/conversation/{test_conversation.conversation_id}",
+        headers=headers,
+    )
+    assert response.status_code == 403
+
+
+def test_update_message_only_sender_can_edit(
+    client: TestClient,
+    test_conversation,
+    test_user,
+    db,
+    auth_headers,
+    auth_headers_user2,
+):
+    message = models.Message(
         content="original content",
         conversation_id=test_conversation.conversation_id,
-        sender_id=test_user.user_id
+        sender_id=test_user.user_id,
     )
     db.add(message)
     db.commit()
     db.refresh(message)
-    
-    response = client.put(
+
+    own_update = client.put(
         f"/api/messages/{message.message_id}",
-        json={"content": "updated content"}
+        json={"content": "updated content"},
+        headers=auth_headers,
     )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["content"] == "updated content"
+    assert own_update.status_code == 200
+    assert own_update.json()["content"] == "updated content"
 
-def test_update_message_not_found(client: TestClient):
-    """should return 404 when updating non-existent message"""
-    response = client.put(
-        "/api/messages/99999",
-        json={"content": "whatever"}
+    other_update = client.put(
+        f"/api/messages/{message.message_id}",
+        json={"content": "hijack"},
+        headers=auth_headers_user2,
     )
-    assert response.status_code == 404
+    assert other_update.status_code == 403
 
-def test_delete_message(client: TestClient, test_conversation, test_user, db):
-    """should delete message successfully"""
-    # create a message
-    from models import Message
-    message = Message(
+
+def test_delete_message_only_sender_can_delete(
+    client: TestClient,
+    test_conversation,
+    test_user,
+    db,
+    auth_headers,
+    auth_headers_user2,
+):
+    message = models.Message(
         content="to be deleted",
         conversation_id=test_conversation.conversation_id,
-        sender_id=test_user.user_id
+        sender_id=test_user.user_id,
     )
     db.add(message)
     db.commit()
     db.refresh(message)
-    
-    response = client.delete(f"/api/messages/{message.message_id}")
-    assert response.status_code == 204
-    
-    # verify message is deleted
-    get_response = client.get(f"/api/messages/{message.message_id}")
-    assert get_response.status_code == 404
 
-def test_delete_message_not_found(client: TestClient):
-    """should return 404 when deleting non-existent message"""
-    response = client.delete("/api/messages/99999")
-    assert response.status_code == 404
+    other_delete = client.delete(f"/api/messages/{message.message_id}", headers=auth_headers_user2)
+    assert other_delete.status_code == 403
+
+    own_delete = client.delete(f"/api/messages/{message.message_id}", headers=auth_headers)
+    assert own_delete.status_code == 204

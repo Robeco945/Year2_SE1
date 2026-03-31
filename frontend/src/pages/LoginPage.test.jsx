@@ -150,7 +150,7 @@ describe('LoginPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
     })
 
-    expect(screen.getByText('Signing in…')).toBeInTheDocument()
+    expect(screen.getByText('Signing in...')).toBeInTheDocument()
 
     await act(async () => {
       resolveLogin({ data: { access_token: 'token' } })

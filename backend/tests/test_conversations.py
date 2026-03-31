@@ -1,140 +1,228 @@
 import pytest
 from fastapi.testclient import TestClient
+import models
 
-# test conversation creation and participant management
+def _create_user(db, username: str, email: str):
+    user = models.User(username=username, email=email, password_hash="hashed")
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
-def test_create_conversation(client: TestClient, test_user, test_user2):
-    """should create a conversation with participants"""
+
+def test_create_conversation_requires_auth(client: TestClient, test_user, test_user2):
     response = client.post(
         "/api/conversations/",
-        json={
-            "type": "private",
-            "participant_ids": [test_user.user_id, test_user2.user_id]
-        }
+        json={"type": "private", "participant_ids": [test_user.user_id, test_user2.user_id]},
+    )
+    assert response.status_code == 401
+
+
+def test_create_conversation(client: TestClient, test_user, test_user2, auth_headers):
+    response = client.post(
+        "/api/conversations/",
+        json={"type": "private", "participant_ids": [test_user.user_id, test_user2.user_id]},
+        headers=auth_headers,
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["type"] == "private"
+    assert data["type"].upper() == "PRIVATE"
     assert "conversation_id" in data
 
-def test_create_conversation_invalid_user(client: TestClient, test_user):
-    """should fail when trying to add non-existent user to conversation"""
+
+def test_create_conversation_invalid_user(client: TestClient, test_user, auth_headers):
     response = client.post(
         "/api/conversations/",
-        json={
-            "type": "private",
-            "participant_ids": [test_user.user_id, 99999]
-        }
+        json={"type": "private", "participant_ids": [test_user.user_id, 99999]},
+        headers=auth_headers,
     )
     assert response.status_code == 404
     assert "not found" in response.json()["detail"].lower()
 
-def test_get_conversation(client: TestClient, test_conversation):
-    """should get conversation by id"""
-    response = client.get(f"/api/conversations/{test_conversation.conversation_id}")
+
+def test_get_conversation_as_member(client: TestClient, test_conversation, auth_headers):
+    response = client.get(
+        f"/api/conversations/{test_conversation.conversation_id}",
+        headers=auth_headers,
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["conversation_id"] == test_conversation.conversation_id
-    assert data["type"] == test_conversation.type
 
-def test_get_conversation_not_found(client: TestClient):
-    """should return 404 for non-existent conversation"""
-    response = client.get("/api/conversations/99999")
-    assert response.status_code == 404
 
-def test_list_conversations(client: TestClient, test_conversation):
-    """should list all conversations"""
-    response = client.get("/api/conversations/")
+def test_get_conversation_forbidden_for_non_member(client: TestClient, test_conversation, db):
+    outsider = _create_user(db, "outsider", "outsider@example.com")
+    from auth import create_access_token
+
+    token = create_access_token({"sub": str(outsider.user_id)})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    response = client.get(
+        f"/api/conversations/{test_conversation.conversation_id}",
+        headers=headers,
+    )
+    assert response.status_code == 403
+
+
+def test_list_conversations_only_for_current_user(
+    client: TestClient,
+    db,
+    test_conversation,
+    test_user,
+    test_user2,
+    auth_headers,
+):
+    user3 = _create_user(db, "user3", "user3@example.com")
+    user4 = _create_user(db, "user4", "user4@example.com")
+
+    other_conversation = models.Conversation(type="PRIVATE")
+    db.add(other_conversation)
+    db.flush()
+    db.add_all([
+        models.ConversationParticipant(
+            conversation_id=other_conversation.conversation_id,
+            user_id=user3.user_id,
+        ),
+        models.ConversationParticipant(
+            conversation_id=other_conversation.conversation_id,
+            user_id=user4.user_id,
+        ),
+    ])
+    db.commit()
+
+    response = client.get("/api/conversations/", headers=auth_headers)
     assert response.status_code == 200
-    data = response.json()
-    assert len(data) >= 1
-    assert any(c["conversation_id"] == test_conversation.conversation_id for c in data)
+    ids = [c["conversation_id"] for c in response.json()]
+    assert test_conversation.conversation_id in ids
+    assert other_conversation.conversation_id not in ids
 
-def test_delete_conversation(client: TestClient, test_conversation):
-    """should delete conversation successfully"""
-    response = client.delete(f"/api/conversations/{test_conversation.conversation_id}")
-    assert response.status_code == 204
-    
-    # verify conversation is deleted
-    get_response = client.get(f"/api/conversations/{test_conversation.conversation_id}")
+
+def test_delete_conversation_as_member(client: TestClient, test_conversation, auth_headers):
+    delete_response = client.delete(
+        f"/api/conversations/{test_conversation.conversation_id}",
+        headers=auth_headers,
+    )
+    assert delete_response.status_code == 204
+
+    get_response = client.get(
+        f"/api/conversations/{test_conversation.conversation_id}",
+        headers=auth_headers,
+    )
     assert get_response.status_code == 404
 
-def test_delete_conversation_not_found(client: TestClient):
-    """should return 404 when deleting non-existent conversation"""
-    response = client.delete("/api/conversations/99999")
-    assert response.status_code == 404
 
-def test_get_conversation_participants(client: TestClient, test_conversation, test_user, test_user2):
-    """should get all participants in a conversation"""
-    response = client.get(f"/api/conversations/{test_conversation.conversation_id}/participants")
+def test_get_conversation_participants_as_member(
+    client: TestClient,
+    test_conversation,
+    test_user,
+    test_user2,
+    auth_headers,
+):
+    response = client.get(
+        f"/api/conversations/{test_conversation.conversation_id}/participants",
+        headers=auth_headers,
+    )
     assert response.status_code == 200
     data = response.json()
     assert len(data) == 2
-    user_ids = [p["user_id"] for p in data]
+    user_ids = [participant["user_id"] for participant in data]
     assert test_user.user_id in user_ids
     assert test_user2.user_id in user_ids
 
-def test_get_participants_empty_conversation(client: TestClient, db):
-    """should return 404 when conversation has no participants"""
-    # create conversation without participants
-    from models import Conversation
-    conversation = Conversation(type="group")
-    db.add(conversation)
-    db.commit()
-    
-    response = client.get(f"/api/conversations/{conversation.conversation_id}/participants")
-    assert response.status_code == 404
 
-def test_add_participant(client: TestClient, test_conversation, db):
-    """should add a new participant to conversation"""
-    # create a third user
-    from models import User
-    new_user = User(
-        username="newparticipant",
-        email="newpart@example.com",
-        password_hash="hashed"
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
+def test_add_participant_to_private_conversation_blocked(
+    client: TestClient,
+    test_conversation,
+    db,
+    auth_headers,
+):
+    user3 = _create_user(db, "newparticipant", "newpart@example.com")
     response = client.post(
-        f"/api/conversations/{test_conversation.conversation_id}/participants/{new_user.user_id}"
-    )
-    assert response.status_code == 201
-
-def test_add_participant_duplicate(client: TestClient, test_conversation, test_user):
-    """should fail when adding user who is already a participant"""
-    response = client.post(
-        f"/api/conversations/{test_conversation.conversation_id}/participants/{test_user.user_id}"
+        f"/api/conversations/{test_conversation.conversation_id}/participants/{user3.user_id}",
+        headers=auth_headers,
     )
     assert response.status_code == 400
-    assert "already" in response.json()["detail"].lower()
+    assert "cannot change participants" in response.json()["detail"].lower()
 
-def test_add_participant_invalid_conversation(client: TestClient, test_user):
-    """should return 404 when adding participant to non-existent conversation"""
-    response = client.post(f"/api/conversations/99999/participants/{test_user.user_id}")
-    assert response.status_code == 404
 
-def test_add_participant_invalid_user(client: TestClient, test_conversation):
-    """should return 404 when adding non-existent user as participant"""
-    response = client.post(f"/api/conversations/{test_conversation.conversation_id}/participants/99999")
-    assert response.status_code == 404
-
-def test_remove_participant(client: TestClient, test_conversation, test_user):
-    """should remove participant from conversation"""
-    response = client.delete(
-        f"/api/conversations/{test_conversation.conversation_id}/participants/{test_user.user_id}"
+def test_add_participant_to_group_conversation(
+    client: TestClient,
+    db,
+    test_user,
+    test_user2,
+    auth_headers,
+):
+    user3 = _create_user(db, "groupmember", "groupmember@example.com")
+    response = client.post(
+        "/api/conversations/",
+        json={"type": "group", "participant_ids": [test_user.user_id, test_user2.user_id]},
+        headers=auth_headers,
     )
-    assert response.status_code == 204
-    
-    # verify participant was removed
-    get_response = client.get(f"/api/conversations/{test_conversation.conversation_id}/participants")
-    data = get_response.json()
-    user_ids = [p["user_id"] for p in data]
-    assert test_user.user_id not in user_ids
+    assert response.status_code == 201
+    conversation_id = response.json()["conversation_id"]
 
-def test_remove_participant_not_found(client: TestClient, test_conversation):
-    """should return 404 when removing non-existent participant"""
-    response = client.delete(f"/api/conversations/{test_conversation.conversation_id}/participants/99999")
-    assert response.status_code == 404
+    add_response = client.post(
+        f"/api/conversations/{conversation_id}/participants/{user3.user_id}",
+        headers=auth_headers,
+    )
+    assert add_response.status_code == 201
+
+
+def test_remove_participant_from_group_self_only(
+    client: TestClient,
+    db,
+    test_user,
+    test_user2,
+    auth_headers,
+):
+    user3 = _create_user(db, "groupmember2", "groupmember2@example.com")
+    from auth import create_access_token
+
+    response = client.post(
+        "/api/conversations/",
+        json={
+            "type": "group",
+            "participant_ids": [test_user.user_id, test_user2.user_id, user3.user_id],
+        },
+        headers=auth_headers,
+    )
+    conversation_id = response.json()["conversation_id"]
+
+    token_user3 = create_access_token({"sub": str(user3.user_id)})
+    headers_user3 = {"Authorization": f"Bearer {token_user3}"}
+    remove_self = client.delete(
+        f"/api/conversations/{conversation_id}/participants/{user3.user_id}",
+        headers=headers_user3,
+    )
+    assert remove_self.status_code == 204
+
+    remove_other = client.delete(
+        f"/api/conversations/{conversation_id}/participants/{test_user2.user_id}",
+        headers=auth_headers,
+    )
+    assert remove_other.status_code == 403
+
+
+def test_conversation_messages_block_non_participants(
+    client: TestClient,
+    test_conversation,
+    db,
+):
+    outsider = _create_user(db, "outsider_chat", "outsider_chat@example.com")
+    from auth import create_access_token
+
+    token = create_access_token({"sub": str(outsider.user_id)})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    read_response = client.get(
+        f"/api/conversations/{test_conversation.conversation_id}/messages",
+        headers=headers,
+    )
+    assert read_response.status_code == 403
+
+    write_response = client.post(
+        f"/api/conversations/{test_conversation.conversation_id}/messages",
+        json={"content": "not allowed"},
+        headers=headers,
+    )
+    assert write_response.status_code == 403

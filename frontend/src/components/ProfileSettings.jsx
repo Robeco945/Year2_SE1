@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { authAPI } from '../services/api'
+import { useLocalization } from '../i18n/LocalizationContext'
 
 export default function ProfileSettings({ currentUser, onClose, onProfileUpdated }) {
+  const { t } = useLocalization()
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [profilePictureUrl, setProfilePictureUrl] = useState('')
@@ -32,10 +34,10 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
         bio: bio,
         profile_picture_url: profilePictureUrl || null,
       })
-      setMessage('Profile updated successfully')
+      setMessage(t('profile.profileUpdatedSuccess'))
       if (onProfileUpdated) onProfileUpdated()
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to update profile')
+      setError(err.response?.data?.detail || t('profile.failedUpdateProfile'))
     } finally {
       setSaving(false)
     }
@@ -44,11 +46,11 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
   const handlePasswordChange = async (e) => {
     e.preventDefault()
     if (newPassword !== confirmPassword) {
-      setError('New passwords do not match')
+      setError(t('profile.passwordMismatch'))
       return
     }
     if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters')
+      setError(t('profile.passwordMinLength'))
       return
     }
     setSaving(true)
@@ -56,12 +58,12 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
     setMessage(null)
     try {
       await authAPI.changePassword(currentPassword, newPassword)
-      setMessage('Password changed successfully')
+      setMessage(t('profile.passwordChangedSuccess'))
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Failed to change password')
+      setError(err.response?.data?.detail || t('profile.failedChangePassword'))
     } finally {
       setSaving(false)
     }
@@ -74,7 +76,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
       <div style={styles.panel}>
         {/* Header */}
         <div style={styles.header}>
-          <h2 style={styles.headerTitle}>Settings</h2>
+          <h2 style={styles.headerTitle}>{t('profile.settings')}</h2>
           <button onClick={onClose} style={styles.closeBtn}>&times;</button>
         </div>
 
@@ -87,7 +89,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
             }}
             onClick={() => { setActiveTab('profile'); setError(null); setMessage(null) }}
           >
-            Profile
+            {t('profile.tabProfile')}
           </button>
           <button
             style={{
@@ -96,7 +98,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
             }}
             onClick={() => { setActiveTab('password'); setError(null); setMessage(null) }}
           >
-            Password
+            {t('profile.tabPassword')}
           </button>
         </div>
 
@@ -111,7 +113,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
             <div style={styles.avatarSection}>
               <div style={styles.avatarCircle}>
                 {avatarUrl ? (
-                  <img src={avatarUrl} alt="Profile" style={styles.avatarImg} />
+                  <img src={avatarUrl} alt={t('profile.avatarAlt')} style={styles.avatarImg} />
                 ) : (
                   <span style={styles.avatarInitial}>
                     {(username || '?')[0].toUpperCase()}
@@ -120,37 +122,37 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
               </div>
             </div>
 
-            <label style={styles.label}>Display Name</label>
+            <label style={styles.label}>{t('profile.displayName')}</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               style={styles.input}
-              placeholder="Your display name"
+              placeholder={t('profile.displayNamePlaceholder')}
             />
 
-            <label style={styles.label}>Bio</label>
+            <label style={styles.label}>{t('profile.bio')}</label>
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               style={styles.textarea}
-              placeholder="Tell people about yourself…"
+              placeholder={t('profile.bioPlaceholder')}
               maxLength={200}
               rows={3}
             />
             <span style={styles.charCount}>{bio.length}/200</span>
 
-            <label style={styles.label}>Profile Picture URL</label>
+            <label style={styles.label}>{t('profile.profilePictureUrl')}</label>
             <input
               type="url"
               value={profilePictureUrl}
               onChange={(e) => setProfilePictureUrl(e.target.value)}
               style={styles.input}
-              placeholder="https://example.com/photo.jpg"
+              placeholder={t('profile.profilePicturePlaceholder')}
             />
 
             <button type="submit" style={styles.saveBtn} disabled={saving}>
-              {saving ? 'Saving…' : 'Save Changes'}
+              {saving ? t('profile.saving') : t('profile.saveChanges')}
             </button>
           </form>
         )}
@@ -158,7 +160,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
         {/* Password Tab */}
         {activeTab === 'password' && (
           <form onSubmit={handlePasswordChange} style={styles.form}>
-            <label style={styles.label}>Current Password</label>
+            <label style={styles.label}>{t('profile.currentPassword')}</label>
             <input
               type="password"
               value={currentPassword}
@@ -167,7 +169,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
               required
             />
 
-            <label style={styles.label}>New Password</label>
+            <label style={styles.label}>{t('profile.newPassword')}</label>
             <input
               type="password"
               value={newPassword}
@@ -177,7 +179,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
               minLength={6}
             />
 
-            <label style={styles.label}>Confirm New Password</label>
+            <label style={styles.label}>{t('profile.confirmNewPassword')}</label>
             <input
               type="password"
               value={confirmPassword}
@@ -188,7 +190,7 @@ export default function ProfileSettings({ currentUser, onClose, onProfileUpdated
             />
 
             <button type="submit" style={styles.saveBtn} disabled={saving}>
-              {saving ? 'Changing…' : 'Change Password'}
+              {saving ? t('profile.changingPassword') : t('profile.changePassword')}
             </button>
           </form>
         )}
@@ -246,7 +248,9 @@ const styles = {
     padding: '0.75rem',
     background: 'none',
     border: 'none',
-    borderBottom: '2px solid transparent',
+    borderBottomWidth: '2px',
+    borderBottomStyle: 'solid',
+    borderBottomColor: 'transparent',
     cursor: 'pointer',
     fontSize: '0.9rem',
     fontWeight: 500,

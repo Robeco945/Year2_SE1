@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-route
 import ConversationList from './components/ConversationList'
 import MessageView from './components/MessageView'
 import ProfileSettings from './components/ProfileSettings'
+import LanguageSelector from './components/LanguageSelector'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import { messageAPI, authAPI, WS_BASE_URL } from './services/api'
 import { playNotificationSound } from './services/notification'
+import { LocalizationProvider, useLocalization } from './i18n/LocalizationContext'
 import './index.css'
 
 // Protect routes that require login
@@ -18,6 +20,7 @@ function RequireAuth({ children }) {
 
 function ChatApp() {
   const navigate = useNavigate()
+  const { t, direction } = useLocalization()
   const [conversations, setConversations] = useState([])
   const [activeId, setActiveId] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
@@ -115,7 +118,7 @@ function ChatApp() {
   const handleCreateConversation = async () => {
     const participantId = parseInt(newParticipant, 10)
     if (!participantId || isNaN(participantId)) {
-      setConvError('Enter a valid user ID')
+      setConvError(t('app.enterValidUserId'))
       return
     }
     setConvError(null)
@@ -128,7 +131,7 @@ function ChatApp() {
       setShowNewConv(false)
       setNewParticipant('')
     } catch (err) {
-      setConvError(err.response?.data?.detail || 'Failed to create conversation')
+      setConvError(err.response?.data?.detail || t('app.failedCreateConversation'))
     }
   }
 
@@ -141,16 +144,19 @@ function ChatApp() {
   }
 
   return (
-  <div style={styles.appWrapper}>
+  <div style={styles.appWrapper} dir={direction}>
     {/* LEFT COLUMN: Sidebar */}
     <aside style={styles.sideBar}>
       <div>
-        <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem' }}>ChatApp</h2>
+        <h2 style={{ margin: '0 0 1.5rem 0', fontSize: '1.25rem' }}>{t('app.brand')}</h2>
+        <div style={{ marginBottom: '1rem' }}>
+          <LanguageSelector />
+        </div>
         {currentUser && (
           <div
             style={styles.profileCard}
             onClick={() => setShowSettings(true)}
-            title="Open settings"
+            title={t('app.openSettingsTitle')}
           >
             <div style={styles.sidebarAvatar}>
               {currentUser.profile_picture_url ? (
@@ -177,10 +183,10 @@ function ChatApp() {
 
       <div style={styles.sidebarActions}>
         <button onClick={() => setShowSettings(true)} style={styles.settingsBtn}>
-          ⚙ Settings
+          {`⚙ ${t('app.settings')}`}
         </button>
         <button onClick={handleLogout} style={styles.logoutBtn}>
-          Log out
+          {t('app.logout')}
         </button>
       </div>
     </aside>
@@ -188,7 +194,7 @@ function ChatApp() {
     {/* RIGHT COLUMN: Conversation List + Messages */}
     <main style={styles.contentArea}>
       {loadingConvs ? (
-        <div style={styles.loading}>Loading conversations…</div>
+        <div style={styles.loading}>{t('app.loadingConversations')}</div>
       ) : (
         <ConversationList
           conversations={conversations}
@@ -204,8 +210,8 @@ function ChatApp() {
     {showNewConv && (
       <div style={styles.overlay}>
         <div style={styles.modal}>
-          <h3>New Message</h3>
-          <p>Enter User ID:</p>
+          <h3>{t('app.newMessageTitle')}</h3>
+          <p>{t('app.enterUserId')}</p>
           <input
             type="number"
             value={newParticipant}
@@ -213,9 +219,10 @@ function ChatApp() {
             style={styles.modalInput}
             autoFocus
           />
+          {convError && <p style={styles.modalError}>{convError}</p>}
           <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-            <button onClick={() => setShowNewConv(false)} style={styles.cancelBtn}>Cancel</button>
-            <button onClick={handleCreateConversation} style={styles.confirmBtn}>Start</button>
+            <button onClick={() => setShowNewConv(false)} style={styles.cancelBtn}>{t('app.cancel')}</button>
+            <button onClick={handleCreateConversation} style={styles.confirmBtn}>{t('app.start')}</button>
           </div>
         </div>
       </div>
@@ -235,21 +242,23 @@ function ChatApp() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <ChatApp />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <LocalizationProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <ChatApp />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </LocalizationProvider>
   )
 }
 
@@ -260,7 +269,7 @@ const styles = {
     height: '100vh',
     width: '100vw',
     overflow: 'hidden',
-    fontFamily: 'sans-serif',
+    fontFamily: 'Segoe UI, Tahoma, sans-serif',
   },
   // This is your wide left column
   sideBar: {
@@ -356,6 +365,43 @@ const styles = {
     maxWidth: '400px',
     boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
   },
-  // ... keep your existing modalInput, cancelBtn, etc.
+  modalInput: {
+    width: '100%',
+    padding: '0.55rem 0.75rem',
+    marginTop: '0.4rem',
+    marginBottom: '0.9rem',
+    border: '1px solid #ccc',
+    borderRadius: '6px',
+  },
+  cancelBtn: {
+    background: '#f0f0f0',
+    border: 'none',
+    color: '#333',
+    padding: '0.55rem 0.85rem',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  confirmBtn: {
+    background: '#9b2fff',
+    border: 'none',
+    color: '#fff',
+    padding: '0.55rem 0.85rem',
+    borderRadius: '6px',
+    cursor: 'pointer',
+  },
+  loading: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '320px',
+    borderRight: '1px solid #ddd',
+    background: '#fff',
+    color: '#666',
+  },
+  modalError: {
+    color: '#c0392b',
+    marginBottom: '0.75rem',
+    fontSize: '0.85rem',
+  },
 }
 

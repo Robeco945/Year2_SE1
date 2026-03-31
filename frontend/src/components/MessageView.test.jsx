@@ -32,7 +32,7 @@ describe('MessageView Component', () => {
   it('shows loading state initially', () => {
     messageAPI.getMessages.mockReturnValue(new Promise(() => {})) // never resolves
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
-    expect(screen.getByText('Loading…')).toBeInTheDocument()
+    expect(screen.getByText('Loading...')).toBeInTheDocument()
   })
 
   it('displays messages after loading', async () => {
@@ -106,7 +106,7 @@ describe('MessageView Component', () => {
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
 
     await waitFor(() => {
-      expect(screen.getByPlaceholderText('Type a message…')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument()
       expect(screen.getByText('Send')).toBeInTheDocument()
     })
   })
@@ -127,7 +127,7 @@ describe('MessageView Component', () => {
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
 
     await waitFor(() => {
-      const input = screen.getByPlaceholderText('Type a message…')
+      const input = screen.getByPlaceholderText('Type a message...')
       fireEvent.change(input, { target: { value: 'test message' } })
       expect(screen.getByText('Send')).not.toBeDisabled()
     })
@@ -140,11 +140,11 @@ describe('MessageView Component', () => {
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
 
     await waitFor(() => {
-      const input = screen.getByPlaceholderText('Type a message…')
+      const input = screen.getByPlaceholderText('Type a message...')
       fireEvent.change(input, { target: { value: 'test message' } })
     })
 
-    const form = screen.getByPlaceholderText('Type a message…').closest('form')
+    const form = screen.getByPlaceholderText('Type a message...').closest('form')
     await act(async () => {
       fireEvent.submit(form)
     })
@@ -159,16 +159,16 @@ describe('MessageView Component', () => {
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
 
     await waitFor(() => {
-      const input = screen.getByPlaceholderText('Type a message…')
+      const input = screen.getByPlaceholderText('Type a message...')
       fireEvent.change(input, { target: { value: 'test' } })
     })
 
-    const form = screen.getByPlaceholderText('Type a message…').closest('form')
+    const form = screen.getByPlaceholderText('Type a message...').closest('form')
     await act(async () => {
       fireEvent.submit(form)
     })
 
-    expect(screen.getByPlaceholderText('Type a message…').value).toBe('')
+    expect(screen.getByPlaceholderText('Type a message...').value).toBe('')
   })
 
   it('shows error when send fails', async () => {
@@ -178,11 +178,11 @@ describe('MessageView Component', () => {
     render(<MessageView conversationId={1} currentUser={mockCurrentUser} />)
 
     await waitFor(() => {
-      const input = screen.getByPlaceholderText('Type a message…')
+      const input = screen.getByPlaceholderText('Type a message...')
       fireEvent.change(input, { target: { value: 'test' } })
     })
 
-    const form = screen.getByPlaceholderText('Type a message…').closest('form')
+    const form = screen.getByPlaceholderText('Type a message...').closest('form')
     await act(async () => {
       fireEvent.submit(form)
     })

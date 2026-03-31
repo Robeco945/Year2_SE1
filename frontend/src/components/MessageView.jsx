@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { messageAPI } from '../services/api'
+import { useLocalization } from '../i18n/LocalizationContext'
 
 export default function MessageView({ conversationId, currentUser, wsMessage }) {
+  const { t, formatNumber, formatTime } = useLocalization()
   const [messages, setMessages] = useState([])
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -15,7 +17,7 @@ export default function MessageView({ conversationId, currentUser, wsMessage }) 
       setMessages(res.data || [])
       setError(null)
     } catch {
-      setError('Failed to load messages')
+      setError(t('message.failedLoad'))
     } finally {
       setLoading(false)
     }
@@ -54,7 +56,7 @@ export default function MessageView({ conversationId, currentUser, wsMessage }) 
       setMessages((prev) => [...prev, res.data])
       setContent('')
     } catch {
-      setError('Failed to send message')
+      setError(t('message.failedSend'))
     } finally {
       setSending(false)
     }
@@ -63,7 +65,7 @@ export default function MessageView({ conversationId, currentUser, wsMessage }) 
   if (!conversationId) {
     return (
       <div style={styles.placeholder}>
-        <p>Select a conversation to start chatting</p>
+        <p>{t('message.selectConversation')}</p>
       </div>
     )
   }
@@ -71,25 +73,26 @@ export default function MessageView({ conversationId, currentUser, wsMessage }) 
   return (
     <div style={styles.container}>
       <div style={styles.messageList}>
-        {loading && <p style={styles.info}>Loading…</p>}
+        {loading && <p style={styles.info}>{t('message.loading')}</p>}
         {error && <p style={styles.errorText}>{error}</p>}
         {!loading && messages.length === 0 && (
-          <p style={styles.info}>No messages yet. Say hello!</p>
+          <p style={styles.info}>{t('message.noMessages')}</p>
         )}
         {messages.map((msg) => {
           const isOwn = currentUser && msg.sender_id === currentUser.user_id
+          const timeLabel = msg.sent_at ? formatTime(msg.sent_at) : ''
           return (
             <div
               key={msg.message_id}
               style={{ ...styles.bubble, ...(isOwn ? styles.bubbleOwn : styles.bubbleOther) }}
             >
               {!isOwn && (
-                <span style={styles.senderLabel}>User {msg.sender_id}</span>
+                <span style={styles.senderLabel}>
+                  {t('message.userWithId', { id: formatNumber(msg.sender_id) })}
+                </span>
               )}
               <span>{msg.content}</span>
-              <span style={styles.time}>
-                {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+              {timeLabel && <span style={styles.time}>{timeLabel}</span>}
             </div>
           )
         })}
@@ -101,11 +104,11 @@ export default function MessageView({ conversationId, currentUser, wsMessage }) 
           value={content}
           onChange={(e) => setContent(e.target.value)}
           style={styles.input}
-          placeholder="Type a message…"
+          placeholder={t('message.inputPlaceholder')}
           disabled={sending}
         />
         <button type="submit" style={styles.sendBtn} disabled={sending || !content.trim()}>
-          Send
+          {t('message.send')}
         </button>
       </form>
     </div>

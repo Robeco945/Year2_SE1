@@ -1,8 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authAPI } from '../services/api'
+import LanguageSelector from '../components/LanguageSelector'
+import { useLocalization } from '../i18n/LocalizationContext'
 
 export default function SignupPage() {
+  const { t, direction } = useLocalization()
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -19,19 +22,22 @@ export default function SignupPage() {
       localStorage.setItem('authToken', res.data.access_token)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Sign up failed')
+      setError(err.response?.data?.detail || t('auth.signupFailed'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} dir={direction}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Create account</h1>
+        <div style={styles.languageArea}>
+          <LanguageSelector compact />
+        </div>
+        <h1 style={styles.title}>{t('auth.createAccount')}</h1>
         {error && <p style={styles.error}>{error}</p>}
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>Username</label>
+          <label style={styles.label}>{t('auth.username')}</label>
           <input
             type="text"
             value={name}
@@ -40,7 +46,7 @@ export default function SignupPage() {
             required
             autoFocus
           />
-          <label style={styles.label}>Email</label>
+          <label style={styles.label}>{t('auth.email')}</label>
           <input
             type="email"
             value={email}
@@ -48,7 +54,7 @@ export default function SignupPage() {
             style={styles.input}
             required
           />
-          <label style={styles.label}>Password</label>
+          <label style={styles.label}>{t('auth.password')}</label>
           <input
             type="password"
             value={password}
@@ -58,13 +64,13 @@ export default function SignupPage() {
             minLength={6}
           />
           <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
+            {loading ? t('auth.creatingAccount') : t('auth.createAccount')}
           </button>
         </form>
         <p style={styles.footer}>
-          Already have an account?{' '}
+          {`${t('auth.alreadyHaveAccount')} `}
           <Link to="/login" style={styles.link}>
-            Sign in
+            {t('auth.signIn')}
           </Link>
         </p>
       </div>
@@ -89,6 +95,11 @@ const styles = {
     maxWidth: '380px',
   },
   title: { margin: '0 0 1.5rem', fontSize: '1.5rem' },
+  languageArea: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '0.8rem',
+  },
   form: { display: 'flex', flexDirection: 'column' },
   label: { fontSize: '0.875rem', fontWeight: 600, marginBottom: '4px' },
   input: {

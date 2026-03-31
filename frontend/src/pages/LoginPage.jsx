@@ -1,8 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authAPI } from '../services/api'
+import LanguageSelector from '../components/LanguageSelector'
+import { useLocalization } from '../i18n/LocalizationContext'
 
 export default function LoginPage() {
+  const { t, direction } = useLocalization()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,19 +21,22 @@ export default function LoginPage() {
       localStorage.setItem('authToken', res.data.access_token)
       navigate('/')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Login failed')
+      setError(err.response?.data?.detail || t('auth.loginFailed'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} dir={direction}>
       <div style={styles.card}>
-        <h1 style={styles.title}>Sign in</h1>
+        <div style={styles.languageArea}>
+          <LanguageSelector compact />
+        </div>
+        <h1 style={styles.title}>{t('auth.signIn')}</h1>
         {error && <p style={styles.error}>{error}</p>}
         <form onSubmit={handleSubmit} style={styles.form}>
-          <label style={styles.label}>Email</label>
+          <label style={styles.label}>{t('auth.email')}</label>
           <input
             type="email"
             value={email}
@@ -39,7 +45,7 @@ export default function LoginPage() {
             required
             autoFocus
           />
-          <label style={styles.label}>Password</label>
+          <label style={styles.label}>{t('auth.password')}</label>
           <input
             type="password"
             value={password}
@@ -48,13 +54,13 @@ export default function LoginPage() {
             required
           />
           <button type="submit" style={styles.button} disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? t('auth.signingIn') : t('auth.signIn')}
           </button>
         </form>
         <p style={styles.footer}>
-          Don&apos;t have an account?{' '}
+          {`${t('auth.dontHaveAccount')} `}
           <Link to="/signup" style={styles.link}>
-            Sign up
+            {t('auth.signUp')}
           </Link>
         </p>
       </div>
@@ -79,6 +85,11 @@ const styles = {
     maxWidth: '380px',
   },
   title: { margin: '0 0 1.5rem', fontSize: '1.5rem' },
+  languageArea: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    marginBottom: '0.8rem',
+  },
   form: { display: 'flex', flexDirection: 'column' },
   label: { fontSize: '0.875rem', fontWeight: 600, marginBottom: '4px' },
   input: {
