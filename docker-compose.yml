@@ -1,6 +1,7 @@
 version: "3.8"
 
 services:
+
   mariadb:
     image: mariadb:11
     container_name: messaging-db
@@ -17,6 +18,14 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+
+  frontend:                         
+    build: ./frontend
+    container_name: messaging-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
 
   backend:
     build: .
