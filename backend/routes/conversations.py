@@ -8,30 +8,80 @@ from websocket_manager import manager
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
+
+def _normalize_conversation_type(conv_type: str) -> str:
+    normalized = (conv_type or "").strip().upper()
+    if normalized not in {"PRIVATE", "GROUP"}:
+        raise HTTPException(status_code=400, detail="Conversation type must be PRIVATE or GROUP")
+    return normalized
+
+
+def _require_membership(
+    db: Session,
+    conversation_id: int,
+    user_id: int,
+) -> models.Conversation:
+    conversation = db.query(models.Conversation).filter(
+        models.Conversation.conversation_id == conversation_id
+    ).first()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    participant = db.query(models.ConversationParticipant).filter(
+        models.ConversationParticipant.conversation_id == conversation_id,
+        models.ConversationParticipant.user_id == user_id,
+    ).first()
+    if not participant:
+        raise HTTPException(status_code=403, detail="You are not a participant in this conversation")
+
+    return conversation
+
 # conversation CRUD
 @router.post("/", response_model=schemas.ConversationResponse, status_code=201)
 
 # create conversation, checks for valid participant IDs, creates conversation and adds participants
-def create_conversation(conv: schemas.ConversationCreate, db: Session = Depends(get_db)):
+def create_conversation(
+    conv: schemas.ConversationCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Create a new conversation"""
-    # enforce exactly 2 participants for private conversations
-    if conv.type.upper() == "PRIVATE" and len(conv.participant_ids) != 2:
+    conversation_type = _normalize_conversation_type(conv.type)
+
+    # De-duplicate participant IDs while preserving input order.
+    participant_ids = list(dict.fromkeys(conv.participant_ids))
+    if current_user.user_id not in participant_ids:
+        participant_ids.append(current_user.user_id)
+
+    if conversation_type == "PRIVATE" and len(participant_ids) != 2:
         raise HTTPException(
             status_code=400,
             detail="Private conversations must have exactly 2 participants"
         )
 
-    db_conversation = models.Conversation(type=conv.type)
+    if conversation_type == "GROUP" and len(participant_ids) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="Group conversations must have at least 2 participants"
+        )
+
+    db_conversation = models.Conversation(type=conversation_type)
     db.add(db_conversation)
     db.flush()  # get the conversation_id without committing
-    
+
+    existing_ids = {
+        user_id
+        for (user_id,) in db.query(models.User.user_id)
+        .filter(models.User.user_id.in_(participant_ids))
+        .all()
+    }
+    missing_ids = [user_id for user_id in participant_ids if user_id not in existing_ids]
+    if missing_ids:
+        db.rollback()
+        raise HTTPException(status_code=404, detail=f"User(s) not found: {missing_ids}")
+
     # add participants
-    for user_id in conv.participant_ids:
-        user = db.query(models.User).filter(models.User.user_id == user_id).first()
-        if not user:
-            db.rollback()
-            raise HTTPException(status_code=404, detail=f"User {user_id} not found")
-        
+    for user_id in participant_ids:
         participant = models.ConversationParticipant(
             conversation_id=db_conversation.conversation_id,
             user_id=user_id
@@ -44,40 +94,61 @@ def create_conversation(conv: schemas.ConversationCreate, db: Session = Depends(
 
 # get conversation by ID, returns 404 if not found
 @router.get("/{conversation_id}", response_model=schemas.ConversationResponse)
-def get_conversation(conversation_id: int, db: Session = Depends(get_db)):
+def get_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Get a conversation by ID"""
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.conversation_id == conversation_id
-    ).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    conversation = _require_membership(db, conversation_id, current_user.user_id)
     return conversation
 
 # list conversations with pagination, returns a list of conversations based on skip and limit parameters
 @router.get("/", response_model=list[schemas.ConversationResponse])
-def list_conversations(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    """List all conversations with pagination"""
-    conversations = db.query(models.Conversation).offset(skip).limit(limit).all()
+def list_conversations(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    """List the authenticated user's conversations with pagination"""
+    conversations = (
+        db.query(models.Conversation)
+        .join(
+            models.ConversationParticipant,
+            models.ConversationParticipant.conversation_id == models.Conversation.conversation_id,
+        )
+        .filter(models.ConversationParticipant.user_id == current_user.user_id)
+        .order_by(models.Conversation.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
     return conversations
 
 # delete conversation, deletes a conversation by ID, returns 404 if not found
 @router.delete("/{conversation_id}", status_code=204)
-def delete_conversation(conversation_id: int, db: Session = Depends(get_db)):
+def delete_conversation(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Delete a conversation"""
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.conversation_id == conversation_id
-    ).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
+    conversation = _require_membership(db, conversation_id, current_user.user_id)
+
     db.delete(conversation)
     db.commit()
     return None
 
 # get all participants in a conversation, returns 404 if conversation not found or no participants found
 @router.get("/{conversation_id}/participants", response_model=list[schemas.ConversationParticipantResponse])
-def get_conversation_participants(conversation_id: int, db: Session = Depends(get_db)):
+def get_conversation_participants(
+    conversation_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Get all participants in a conversation"""
+    _require_membership(db, conversation_id, current_user.user_id)
     participants = db.query(models.ConversationParticipant).filter(
         models.ConversationParticipant.conversation_id == conversation_id
     ).all()
@@ -87,14 +158,15 @@ def get_conversation_participants(conversation_id: int, db: Session = Depends(ge
 
 # add participant, adds a user to a conversation, checks for valid conversation and user IDs, checks if user is already a participant before adding
 @router.post("/{conversation_id}/participants/{user_id}", status_code=201)
-def add_participant(conversation_id: int, user_id: int, db: Session = Depends(get_db)):
+def add_participant(
+    conversation_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Add a user to a conversation"""
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.conversation_id == conversation_id
-    ).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-    
+    conversation = _require_membership(db, conversation_id, current_user.user_id)
+
     user = db.query(models.User).filter(models.User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -107,16 +179,11 @@ def add_participant(conversation_id: int, user_id: int, db: Session = Depends(ge
     if existing:
         raise HTTPException(status_code=400, detail="User already in conversation")
 
-    # prevent adding more than 2 participants to a private conversation
     if conversation.type.upper() == "PRIVATE":
-        participant_count = db.query(models.ConversationParticipant).filter(
-            models.ConversationParticipant.conversation_id == conversation_id
-        ).count()
-        if participant_count >= 2:
-            raise HTTPException(
-                status_code=400,
-                detail="Private conversations cannot have more than 2 participants"
-            )
+        raise HTTPException(
+            status_code=400,
+            detail="Private conversations cannot change participants"
+        )
     
     participant = models.ConversationParticipant(
         conversation_id=conversation_id,
@@ -137,11 +204,7 @@ def get_conversation_messages(
     current_user: models.User = Depends(get_current_user),
 ):
     """Get all messages in a conversation"""
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.conversation_id == conversation_id
-    ).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    _require_membership(db, conversation_id, current_user.user_id)
 
     messages = (
         db.query(models.Message)
@@ -163,11 +226,7 @@ async def send_conversation_message(
     current_user: models.User = Depends(get_current_user),
 ):
     """Send a message in a conversation (sender is the authenticated user)"""
-    conversation = db.query(models.Conversation).filter(
-        models.Conversation.conversation_id == conversation_id
-    ).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation not found")
+    _require_membership(db, conversation_id, current_user.user_id)
 
     db_message = models.Message(
         content=body.content,
@@ -179,16 +238,16 @@ async def send_conversation_message(
     db.refresh(db_message)
 
     # Push the new message to the other participant if they are connected via WS
-    other = (
+    recipients = (
         db.query(models.ConversationParticipant)
         .filter(
             models.ConversationParticipant.conversation_id == conversation_id,
             models.ConversationParticipant.user_id != current_user.user_id,
         )
-        .first()
+        .all()
     )
-    if other:
-        await manager.send_to_user(other.user_id, {
+    for recipient in recipients:
+        await manager.send_to_user(recipient.user_id, {
             "message_id": db_message.message_id,
             "conversation_id": db_message.conversation_id,
             "sender_id": db_message.sender_id,
@@ -201,8 +260,27 @@ async def send_conversation_message(
 
 # remove participant, removes a user from a conversation, checks for valid conversation and user IDs, checks if user is a participant before removing
 @router.delete("/{conversation_id}/participants/{user_id}", status_code=204)
-def remove_participant(conversation_id: int, user_id: int, db: Session = Depends(get_db)):
+def remove_participant(
+    conversation_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
     """Remove a user from a conversation"""
+    conversation = _require_membership(db, conversation_id, current_user.user_id)
+
+    if conversation.type.upper() == "PRIVATE":
+        raise HTTPException(
+            status_code=400,
+            detail="Private conversations cannot change participants"
+        )
+
+    if current_user.user_id != user_id:
+        raise HTTPException(
+            status_code=403,
+            detail="You can only remove yourself from a conversation"
+        )
+
     participant = db.query(models.ConversationParticipant).filter(
         (models.ConversationParticipant.conversation_id == conversation_id) &
         (models.ConversationParticipant.user_id == user_id)

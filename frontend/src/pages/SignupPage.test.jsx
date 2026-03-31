@@ -152,7 +152,7 @@ describe('SignupPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Create account' }))
     })
 
-    expect(screen.getByText('Creating account…')).toBeInTheDocument()
+    expect(screen.getByText('Creating account...')).toBeInTheDocument()
 
     await act(async () => {
       resolveRegister({ data: { access_token: 'token' } })

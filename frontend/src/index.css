@@ -33,6 +33,35 @@ body {
   font-weight: 600;
 }
 
+.locale-preview-wrapper {
+  padding: 10px 14px 0;
+}
+
+.locale-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12px;
+}
+
+.locale-preview-table th,
+.locale-preview-table td {
+  border-bottom: 1px solid #f1f1f1;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.locale-preview-table tr:last-child td {
+  border-bottom: none;
+}
+
+.locale-preview-table th {
+  background: #f8f9fb;
+  font-weight: 600;
+}
+
 .new-chat-btn {
   width: 40px;
   height: 40px;
@@ -52,6 +81,14 @@ body {
 .conversations {
   flex: 1;
   overflow-y: auto;
+}
+
+[dir='rtl'] .conversation-header,
+[dir='rtl'] .conversation-item,
+[dir='rtl'] .empty-conversations,
+[dir='rtl'] .locale-preview-table th,
+[dir='rtl'] .locale-preview-table td {
+  text-align: right;
 }
 
 .empty-conversations {

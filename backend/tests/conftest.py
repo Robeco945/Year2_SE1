@@ -5,6 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from database import Base, get_db
 from main import app
 import models
+from auth import create_access_token
 
 # use in-memory sqlite for testing, way faster than real db
 TEST_DATABASE_URL = "sqlite:///./test.db"
@@ -85,3 +86,17 @@ def test_conversation(db, test_user, test_user2):
     db.commit()
     db.refresh(conversation)
     return conversation
+
+
+@pytest.fixture
+def auth_headers(test_user):
+    """Auth headers for test_user"""
+    token = create_access_token({"sub": str(test_user.user_id)})
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def auth_headers_user2(test_user2):
+    """Auth headers for test_user2"""
+    token = create_access_token({"sub": str(test_user2.user_id)})
+    return {"Authorization": f"Bearer {token}"}
