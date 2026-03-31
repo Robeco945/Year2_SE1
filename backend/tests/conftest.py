@@ -66,7 +66,9 @@ def test_user2(db):
 @pytest.fixture
 def test_conversation(db, test_user, test_user2):
     """Create a test conversation with two participants"""
-    conversation = models.Conversation(type="private")
+    conversation = models.Conversation(
+    	type=models.ConversationType.PRIVATE
+    )
     db.add(conversation)
     db.flush()
     

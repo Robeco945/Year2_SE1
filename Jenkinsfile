@@ -1,54 +1,43 @@
 pipeline {
     agent any
-    environment {
-        PYTHON_ENV = 'venv'
-    }
+
     stages {
-        stage('Checkout Code') {
+
+        stage('Checkout') {
             steps {
-                git url: 'https://github.com/Robeco945/Year2_SE1.git', branch: 'main'
+                checkout scm
             }
         }
-        stage('Setup Python Environment') {
+
+        stage('Start Environment') {
             steps {
-                sh '''
-                python3 -m venv $PYTHON_ENV
-                source $PYTHON_ENV/bin/activate
-                pip install --upgrade pip
-                pip install -r requirements.txt
-                '''
+                bat 'docker-compose up -d --build'
             }
         }
-        stage('Run Unit Tests') {
+
+        stage('Run Tests') {
             steps {
-                sh '''
-                source $PYTHON_ENV/bin/activate
-                pytest --junitxml=reports/test-results.xml --cov=yourpackage --cov-report=html:reports/coverage
-                '''
-            }
-            post {
-                always {
-                    junit 'reports/test-results.xml'
-                    publishHTML(target: [
-                        reportName: 'Coverage Report',
-                        reportDir: 'reports/coverage',
-                        reportFiles: 'index.html'
-                    ])
-                }
+                bat 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
             }
         }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t yourproject:latest .'
-            }
+
+	stage('Collect Coverage') {
+    	    steps {
+        	bat 'docker cp $(docker-compose ps -q backend):/app/htmlcov ./htmlcov'
+    	    }
         }
+
+	stage('Archive Coverage') {
+    	    steps {
+        	archiveArtifacts artifacts: 'htmlcov/**', fingerprint: true
+    	    }
+	}
     }
+
     post {
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed!'
+        always {
+            bat 'docker-compose down -v'
         }
     }
+
 }
