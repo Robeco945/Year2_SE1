@@ -1,0 +1,35 @@
+# Sprint Planning — Sprint 6
+
+## Sprint Goal
+
+The goal of Sprint 6 is to implement database localization and update our backend architecture. 
+
+Building upon the UI localization completed in Sprint 5, this sprint will focus on modifying the database schema and data models to store, manage, and serve dynamic, user-generated multilingual content.
+
+---
+
+## Planned User Stories / Tasks
+
+During Sprint 6, the team will focus on completing the following user stories and tasks:
+- Design and implement database schema changes (e.g., translation tables or JSON/locale columns) to support multilingual data.
+- Update backend ORM models and validation schemas to handle localized CRUD operations.
+- Modify existing API endpoints to accept language headers and return the correct localized content dynamically.
+- Create and execute database migration scripts to safely transition existing data to the new multilingual structure.
+- Update the project UML and ER diagrams to reflect the new localized database schema.
+
+---
+
+## Key Focus Areas / Expected Outcomes
+
+- **Data Integrity:** Ensure that the new database structure safely stores multiple languages without data loss or corruption.
+- **Query Performance:** Design the translation schema to minimize database load and avoid slow query times when fetching localized content.
+- **API Harmony:** Ensure the frontend language selector (built in Sprint 5) seamlessly dictates the language of the dynamic content fetched from the backend.
+
+---
+
+## Known Risks & Challenges
+
+- Safely migrating existing production/test data to a new relational structure without downtime or data loss.
+- Managing the added complexity in backend queries (e.g., handling fallback languages if a specific translation does not exist in the database).
+- Keeping API response times fast despite the extra table joins or JSON parsing required for translations.
+
