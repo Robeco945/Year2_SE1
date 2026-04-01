@@ -60,8 +60,8 @@ project/
 │   │   ├── components/  # ConversationList, MessageView, ProfileSettings
 │   │   ├── pages/       # LoginPage, SignupPage
 │   │   └── services/    # API calls
-│   ├── Dockerfile
-│   └── nginx.conf
+│   ├── package.json
+│   └── vite.config.js
 ├── database/
 │   ├── schema.sql
 │   └── seed.sql
@@ -78,13 +78,16 @@ project/
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/messaging-app.git
-cd messaging-app
+git clone <your-repository-url>
+cd Year2_SE1
 ```
 
 ### 2. Install Dependencies
 
 ```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -127,24 +130,26 @@ This will start:
 
 ### User Authentication
 
-| Method | Endpoint  | Description     |
-| ------ | --------- | --------------- |
-| POST   | /register | Create new user |
-| POST   | /login    | User login      |
+| Method | Endpoint           | Description             |
+| ------ | ------------------ | ----------------------- |
+| POST   | /api/auth/register | Create new user account |
+| POST   | /api/auth/login    | User login              |
 
 ### Conversations
 
-| Method | Endpoint       | Description            |
-| ------ | -------------- | ---------------------- |
-| POST   | /conversations | Create conversation    |
-| GET    | /conversations | Retrieve conversations |
+| Method | Endpoint            | Description            |
+| ------ | ------------------- | ---------------------- |
+| POST   | /api/conversations/ | Create conversation    |
+| GET    | /api/conversations/ | Retrieve conversations |
 
 ### Messages
 
-| Method | Endpoint  | Description       |
-| ------ | --------- | ----------------- |
-| POST   | /messages | Send message      |
-| GET    | /messages | Retrieve messages |
+| Method | Endpoint                                           | Description                       |
+| ------ | -------------------------------------------------- | --------------------------------- |
+| POST   | /api/messages/                                     | Send message                      |
+| GET    | /api/messages/                                     | Retrieve messages                 |
+| POST   | /api/conversations/{conversation_id}/messages      | Send message in a conversation    |
+| GET    | /api/conversations/{conversation_id}/messages      | Retrieve messages in conversation |
 
 ---
 
@@ -163,7 +168,7 @@ These diagrams illustrate the structure and interactions between the system comp
 
 ## Future Improvements
 
-* Real-time messaging using WebSockets
+* Typing indicators and read receipts
 * Message notifications
 * File sharing support
 * User profile management
