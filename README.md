@@ -11,6 +11,7 @@ The system is built using a modern backend architecture with **FastAPI**, **Mari
 ## Features
 
 * User registration and login
+* UI language selector with localization support (English, Arabic, Japanese)
 * Create private or group conversations
 * Send and receive messages
 * Message storage in a relational database
@@ -168,6 +169,7 @@ These diagrams illustrate the structure and interactions between the system comp
 
 ## Future Improvements
 
+* Add more supported languages/locales
 * Typing indicators and read receipts
 * Message notifications
 * File sharing support
