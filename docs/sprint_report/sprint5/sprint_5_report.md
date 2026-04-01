@@ -43,8 +43,8 @@ During Sprint 5, the following user stories and tasks were completed by the team
 
 ## Time Spent per Team Member
 
-| Team Member     | Responsibility Focus                           | Time Spent (hours) |
-|-----------------|------------------------------------------------|--------------------|
-| Vadim Kotukhov  | Managing tests and backlog and guidance        | 5                  |
-| Saarinen Iida   | Test and backend troubleshoot                  | 4                  |
-| Caretto Roberto | Frontend structure, UI, integration            | 6                  |
+| Team Member     | Responsibility Focus                           | Time Spent (hours) | In class assignment
+|-----------------|------------------------------------------------|--------------------|--------------------
+| Vadim Kotukhov  | Managing tests and backlog and guidance        | 5                  | not done
+| Saarinen Iida   | Test and backend troubleshoot                  | 4                  | done assignment 1
+| Caretto Roberto | Frontend structure, UI, integration            | 6                  | done 1 and 2
