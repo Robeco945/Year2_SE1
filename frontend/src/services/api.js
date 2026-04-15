@@ -78,4 +78,17 @@ export const authAPI = {
   },
 }
 
+export const i18nAPI = {
+  getTranslations: (locale, keys = []) =>
+    api.get('/i18n/translations', {
+      params: {
+        locale,
+        ...(keys.length ? { keys } : {}),
+      },
+      paramsSerializer: {
+        indexes: null,
+      },
+    }),
+}
+
 export default api

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from typing import Optional, List
 from models import ConversationType
@@ -8,6 +8,13 @@ from models import ConversationType
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        if isinstance(value, str):
+            return value.strip().lower()
+        return value
 
 
 class RegisterRequest(BaseModel):
@@ -124,3 +131,9 @@ class ConversationWithParticipants(ConversationResponse):
 class ConversationParticipantWithDetails(ConversationParticipantResponse):
     user: UserResponse
     conversation: ConversationResponse
+
+
+class I18nTranslationsResponse(BaseModel):
+    locale: str
+    fallback_locale: str
+    translations: dict[str, str]

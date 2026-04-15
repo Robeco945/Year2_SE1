@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from './locales'
+import { i18nAPI } from '../services/api'
 
 const LANGUAGE_STORAGE_KEY = 'uiLanguage'
 const FALLBACK_LANGUAGE = 'en'
 
 function getTranslationByPath(dictionary, keyPath) {
+  if (dictionary && Object.prototype.hasOwnProperty.call(dictionary, keyPath)) {
+    return dictionary[keyPath]
+  }
+
   return keyPath
     .split('.')
     .reduce((node, segment) => (node && node[segment] !== undefined ? node[segment] : null), dictionary)
@@ -18,14 +23,18 @@ function interpolate(template, variables = {}) {
   })
 }
 
-function buildTranslator(languageCode) {
+function buildTranslator(languageCode, dbTranslationsByLanguage) {
   return (keyPath, variables = {}) => {
+    const activeDbDictionary = dbTranslationsByLanguage[languageCode] || {}
+    const fallbackDbDictionary = dbTranslationsByLanguage[FALLBACK_LANGUAGE] || {}
     const activeDictionary = TRANSLATIONS[languageCode] || TRANSLATIONS[FALLBACK_LANGUAGE]
     const fallbackDictionary = TRANSLATIONS[FALLBACK_LANGUAGE]
 
+    const dbValue = getTranslationByPath(activeDbDictionary, keyPath)
+    const dbFallbackValue = getTranslationByPath(fallbackDbDictionary, keyPath)
     const value = getTranslationByPath(activeDictionary, keyPath)
     const fallbackValue = getTranslationByPath(fallbackDictionary, keyPath)
-    const resolved = value ?? fallbackValue ?? keyPath
+    const resolved = dbValue ?? dbFallbackValue ?? value ?? fallbackValue ?? keyPath
 
     return interpolate(resolved, variables)
   }
@@ -37,7 +46,7 @@ function resolveDirection(languageCode) {
 }
 
 const defaultLanguage = FALLBACK_LANGUAGE
-const defaultTranslator = buildTranslator(defaultLanguage)
+const defaultTranslator = buildTranslator(defaultLanguage, {})
 
 const LocalizationContext = createContext({
   language: defaultLanguage,
@@ -59,6 +68,38 @@ export function LocalizationProvider({ children }) {
     const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY)
     return SUPPORTED_LANGUAGES.some((item) => item.code === saved) ? saved : FALLBACK_LANGUAGE
   })
+  const [dbTranslationsByLanguage, setDbTranslationsByLanguage] = useState({})
+
+  useEffect(() => {
+    let isMounted = true
+
+    const fetchTranslations = async (locale) => {
+      if (!i18nAPI || typeof i18nAPI.getTranslations !== 'function') {
+        return
+      }
+
+      try {
+        const response = await i18nAPI.getTranslations(locale)
+        if (!isMounted) return
+
+        setDbTranslationsByLanguage((previous) => ({
+          ...previous,
+          [response.data.locale]: response.data.translations || {},
+        }))
+      } catch (error) {
+        // Keep static fallback translations when the API is unavailable.
+      }
+    }
+
+    fetchTranslations(language)
+    if (language !== FALLBACK_LANGUAGE) {
+      fetchTranslations(FALLBACK_LANGUAGE)
+    }
+
+    return () => {
+      isMounted = false
+    }
+  }, [language])
 
   useEffect(() => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language)
@@ -70,7 +111,7 @@ export function LocalizationProvider({ children }) {
 
   const value = useMemo(() => {
     const direction = resolveDirection(language)
-    const t = buildTranslator(language)
+    const t = buildTranslator(language, dbTranslationsByLanguage)
 
     return {
       language,
@@ -86,7 +127,7 @@ export function LocalizationProvider({ children }) {
         ...options,
       }).format(new Date(dateValue)),
     }
-  }, [language])
+  }, [language, dbTranslationsByLanguage])
 
   return <LocalizationContext.Provider value={value}>{children}</LocalizationContext.Provider>
 }

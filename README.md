@@ -12,6 +12,7 @@ The system is built using a modern backend architecture with **FastAPI**, **Mari
 
 * User registration and login
 * UI language selector with localization support (English, Arabic, Japanese)
+* Database-backed UI translations loaded through the backend i18n API
 * Create private or group conversations
 * Send and receive messages
 * Message storage in a relational database
@@ -151,6 +152,56 @@ This will start:
 | GET    | /api/messages/                                     | Retrieve messages                 |
 | POST   | /api/conversations/{conversation_id}/messages      | Send message in a conversation    |
 | GET    | /api/conversations/{conversation_id}/messages      | Retrieve messages in conversation |
+
+### Localization (i18n)
+
+| Method | Endpoint               | Description                                              |
+| ------ | ---------------------- | -------------------------------------------------------- |
+| GET    | /api/i18n/translations | Return localized UI dictionary for `en`, `ar`, or `ja` |
+
+Query parameters:
+
+* `locale` (optional): requested locale, defaults to `en`
+* `keys` (optional, repeatable): filter response to specific translation keys
+
+Fallback behavior:
+
+* The endpoint applies fallback to English (`en`) per missing key.
+* Unsupported locales automatically fall back to `en`.
+
+Scope note:
+
+* This localization model applies to app-owned UI text only.
+* User-generated content (messages, usernames, bios) is not translated.
+
+## Database Localization Method
+
+The project uses a normalized key-value translation schema:
+
+* `i18n_keys` stores stable key names like `app.brand` or `auth.signIn`
+* `i18n_translations` stores localized values per key and locale
+
+Why this approach:
+
+* avoids schema changes when adding new languages
+* supports per-key fallback to English
+* keeps retrieval simple and index-friendly
+
+Markdown ERD relationship explanation:
+
+* one `i18n_keys` row can have many `i18n_translations`
+* `i18n_translations.i18n_key_id` is a foreign key to `i18n_keys.i18n_key_id`
+* uniqueness is enforced for `(i18n_key_id, locale)`
+
+Encoding and locale configuration:
+
+* MariaDB server runs with `utf8mb4` / `utf8mb4_unicode_ci`
+* localization tables are created with explicit `CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+* backend MySQL connections use `charset=utf8mb4`
+
+Implementation report:
+
+* `docs/sprint_report/sprint6/sprint_6_db_localization_implementation.md`
 
 ---
 
