@@ -2,7 +2,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from contextlib import asynccontextmanager
 from database import Base, engine
 from fastapi.middleware.cors import CORSMiddleware
-from routes import users, conversations, messages, auth as auth_routes
+import models
+from routes import users, conversations, messages, auth as auth_routes, i18n
 from websocket_manager import manager
 from auth import SECRET_KEY, ALGORITHM
 from jose import JWTError, jwt
@@ -33,6 +34,7 @@ app.include_router(auth_routes.router)
 app.include_router(users.router)
 app.include_router(conversations.router)
 app.include_router(messages.router)
+app.include_router(i18n.router)
 
 @app.get("/", tags=["root"])
 def read_root():

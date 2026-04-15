@@ -13,7 +13,11 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://user:password@localhost:3306/fastapi_db"
 )
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine_options = {"echo": True}
+if DATABASE_URL.startswith("mysql"):
+    engine_options["connect_args"] = {"charset": "utf8mb4"}
+
+engine = create_engine(DATABASE_URL, **engine_options)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
