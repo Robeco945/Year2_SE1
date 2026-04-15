@@ -7,7 +7,6 @@ from passlib.context import CryptContext
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
-# bcrypt for password hashing, using passlib for secure password management
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
@@ -16,13 +15,9 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-# user CRUD 
-
-# create user, checks for existing email or username, hashes password before storing
 @router.post("/", response_model=schemas.UserResponse, status_code=201)
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """Create a new user"""
-    # check if user already exists
     existing_user = db.query(models.User).filter(
         (models.User.email == user.email) | (models.User.username == user.username)
     ).first()
@@ -40,7 +35,6 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-# get user by ID, returns 404 if not found
 @router.get("/{user_id}", response_model=schemas.UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     """Get a user by ID"""
@@ -49,14 +43,12 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-# list users with pagination, returns a list of users based on skip and limit parameters
 @router.get("/", response_model=list[schemas.UserResponse])
 def list_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
     """List all users with pagination"""
     users = db.query(models.User).offset(skip).limit(limit).all()
     return users
 
-# update user, allows updating username and email, checks for existing email or username before updating
 @router.put("/{user_id}", response_model=schemas.UserResponse)
 def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(get_db)):
     """Update a user"""
@@ -73,7 +65,6 @@ def update_user(user_id: int, user: schemas.UserUpdate, db: Session = Depends(ge
     db.refresh(db_user)
     return db_user
 
-# delete user, deletes a user by ID, returns 404 if not found, should be secured in production to prevent unauthorized deletions
 @router.delete("/{user_id}", status_code=204)
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     """Delete a user"""
@@ -83,4 +74,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     
     db.delete(db_user)
     db.commit()
-    return None

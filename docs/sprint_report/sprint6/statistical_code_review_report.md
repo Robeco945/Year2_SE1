@@ -58,3 +58,12 @@ Raw outputs are under docs/sprint_report/sprint6/static_analysis:
 - lizard_backend.txt
 - jscpd.txt
 - vulture_backend.txt
+
+## Suggested Improvements & Recommendations
+Based on the metrics, the following actions are planned for the Code Clean-Up phase:
+1. **Refactor `create_conversation`**: Extract sub-routines from this method in `backend/routes/conversations.py` to reduce its NLOC (41) and Cyclomatic Complexity (11) to acceptable thresholds.
+2. **Reduce Frontend Duplication**: Investigate the 17.69% JS duplication in frontend test files and extract common setup logic into reusable utility functions.
+3. **Pylint Remediation**: Address the recurring missing docstrings and import order violations to improve the baseline maintainability score above 8.0/10.
+
+## Visual Evidence
+![SonarQube Dashboard Analysis](./MetroMessengerSonarQubeAnalysis.png)
