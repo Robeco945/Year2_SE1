@@ -94,3 +94,34 @@ class Message(Base):
 
     def __repr__(self):
         return f"<Message(message_id={self.message_id}, sender_id={self.sender_id})>"
+
+
+class I18nKey(Base):
+    __tablename__ = "i18n_keys"
+
+    i18n_key_id = Column(Integer, primary_key=True, index=True)
+    key_name = Column(String(255), nullable=False, unique=True, index=True)
+
+    translations = relationship(
+        "I18nTranslation", back_populates="key", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self):
+        return f"<I18nKey(i18n_key_id={self.i18n_key_id}, key_name={self.key_name})>"
+
+
+class I18nTranslation(Base):
+    __tablename__ = "i18n_translations"
+
+    i18n_translation_id = Column(Integer, primary_key=True, index=True)
+    i18n_key_id = Column(Integer, ForeignKey("i18n_keys.i18n_key_id"), nullable=False)
+    locale = Column(String(10), nullable=False, index=True)
+    translation_text = Column(Text, nullable=False)
+
+    key = relationship("I18nKey", back_populates="translations")
+
+    def __repr__(self):
+        return (
+            f"<I18nTranslation(i18n_translation_id={self.i18n_translation_id}, "
+            f"locale={self.locale})>"
+        )

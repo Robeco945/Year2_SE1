@@ -35,7 +35,8 @@ def register(user: schemas.RegisterRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=schemas.TokenResponse)
 def login(credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
     """Login and return a JWT token"""
-    user = db.query(models.User).filter(models.User.email == credentials.email).first()
+    normalized_email = str(credentials.email).strip().lower()
+    user = db.query(models.User).filter(models.User.email == normalized_email).first()
     if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
