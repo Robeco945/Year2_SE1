@@ -1,0 +1,73 @@
+================================================
+  NLOC    CCN   token  PARAM  length  location  
+------------------------------------------------
+       5      2     66      2       5 create_access_token@20-24@backend/auth.py
+      20      4    126      1      21 get_current_user@27-47@backend/auth.py
+       6      2     22      0       6 get_db@20-25@backend/database.py
+      13      3     64      0      14 fix_enum_casing@4-17@backend/fix_db.py
+       4      3     35      1       4 lifespan@13-16@backend/main.py
+       7      1     23      0       8 read_root@43-50@backend/main.py
+       2      1     11      0       3 health_check@54-56@backend/main.py
+      20      5    115      3      28 websocket_endpoint@61-88@backend/main.py
+       6      4     47      2       7 _missing_@13-19@backend/models.py
+       2      1      8      1       2 __repr__@39-40@backend/models.py
+       2      1      8      1       2 __repr__@61-62@backend/models.py
+       2      1      8      1       2 __repr__@78-79@backend/models.py
+       2      1      8      1       2 __repr__@95-96@backend/models.py
+       2      1     18      1       2 __init__@8-9@backend/websocket_manager.py
+       3      1     29      3       3 connect@11-13@backend/websocket_manager.py
+       2      1     21      2       2 disconnect@15-16@backend/websocket_manager.py
+       7      3     50      3       8 send_to_user@18-25@backend/websocket_manager.py
+      16      2    144      2      19 register@14-32@backend/routes/auth.py
+       6      3     98      2       8 login@36-43@backend/routes/auth.py
+       2      1     17      1       3 get_me@47-49@backend/routes/auth.py
+      20      5    141      2      21 update_profile@53-73@backend/routes/auth.py
+      10      2     76      2      11 change_password@77-87@backend/routes/auth.py
+       5      3     47      1       5 _normalize_conversation_type@12-16@backend/routes/conversations.py
+      17      3    111      3      19 _require_membership@19-37@backend/routes/conversations.py
+      41     11    248      2      51 create_conversation@43-93@backend/routes/conversations.py
+       7      1     43      2       8 get_conversation@97-104@backend/routes/conversations.py
+      19      1    111      3      20 list_conversations@108-127@backend/routes/conversations.py
+       9      1     54      2      11 delete_conversation@131-141@backend/routes/conversations.py
+      12      2     81      2      13 get_conversation_participants@145-157@backend/routes/conversations.py
+      29      4    191      3      35 add_participant@161-195@backend/routes/conversations.py
+      17      1     99      4      19 get_conversation_messages@199-217@backend/routes/conversations.py
+      32      2    176      3      37 send_conversation_message@222-258@backend/routes/conversations.py
+      26      4    150      3      32 remove_participant@263-294@backend/routes/conversations.py
+      12      3    106      3      13 _require_conversation_participation@11-23@backend/routes/messages.py
+      17      2    106      2      20 create_message@29-48@backend/routes/messages.py
+      10      2     83      2      12 get_message@52-63@backend/routes/messages.py
+      19      1    111      3      20 list_messages@67-86@backend/routes/messages.py
+      17      1     99      4      19 get_messages_by_conversation@90-108@backend/routes/messages.py
+      17      4    132      3      22 update_message@112-133@backend/routes/messages.py
+      14      3    114      2      18 delete_message@137-154@backend/routes/messages.py
+       2      1     16      1       2 hash_password@13-14@backend/routes/users.py
+       2      1     22      2       2 verify_password@16-17@backend/routes/users.py
+      15      2    120      2      19 create_user@23-41@backend/routes/users.py
+       5      2     59      2       6 get_user@45-50@backend/routes/users.py
+       3      1     51      3       4 list_users@54-57@backend/routes/users.py
+      11      4    100      3      14 update_user@61-74@backend/routes/users.py
+       7      2     70      2       9 delete_user@78-86@backend/routes/users.py
+12 file analyzed.
+==============================================================
+NLOC    Avg.NLOC  AvgCCN  Avg.token  function_cnt    file
+--------------------------------------------------------------
+     38      12.5     3.0       96.0         2     backend/auth.py
+     19       6.0     2.0       22.0         1     backend/database.py
+     17      13.0     3.0       64.0         1     backend/fix_db.py
+     67       8.2     2.5       46.0         4     backend/main.py
+     67       2.8     1.6       15.8         5     backend/models.py
+     74       0.0     0.0        0.0         0     backend/schemas.py
+     18       3.5     1.5       29.5         4     backend/websocket_manager.py
+     67      10.8     2.6       95.2         5     backend/routes/auth.py
+    231      19.5     3.0      119.2        11     backend/routes/conversations.py
+      0       0.0     0.0        0.0         0     backend/routes/__init__.py
+    119      15.1     2.3      107.3         7     backend/routes/messages.py
+     58       6.4     1.9       62.6         7     backend/routes/users.py
+
+===============================================================================================================
+No thresholds exceeded (cyclomatic_complexity > 15 or length > 1000 or nloc > 1000000 or parameter_count > 100)
+==========================================================================================
+Total nloc   Avg.NLOC  AvgCCN  Avg.token   Fun Cnt  Warning cnt   Fun Rt   nloc Rt
+------------------------------------------------------------------------------------------
+       775      11.1     2.3       77.3       47            0      0.00    0.00

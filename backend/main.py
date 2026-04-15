@@ -15,15 +15,13 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
     yield
 
-# initialize fastapi
 app = FastAPI(
     title="fastapi",
     description="fastapi chat with sql",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
-# cors handling, not strict for development, should be tightened for production
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,14 +30,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# route handling
 app.include_router(auth_routes.router)
 app.include_router(users.router)
 app.include_router(conversations.router)
 app.include_router(messages.router)
 app.include_router(i18n.router)
 
-# root, the main entry point of the API
 @app.get("/", tags=["root"])
 def read_root():
     """Root endpoint"""
@@ -47,28 +43,22 @@ def read_root():
         "message": "waow",
         "version": "1.0.0",
         "docs": "/docs",
-        "openapi": "/openapi.json"
+        "openapi": "/openapi.json",
     }
 
-# health check endpoint, useful for monitoring and load balancers
 @app.get("/health", tags=["health"])
 def health_check():
     """Health check endpoint"""
     return {"status": "healthy"}
 
 
-# WebSocket endpoint — one persistent connection per authenticated user
 @app.websocket("/ws/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
     user_id: int,
     token: str = Query(...),
 ):
-    """Accept and hold a WebSocket connection for a specific user.
-
-    The JWT token is passed as a query parameter because browsers cannot set
-    custom HTTP headers during the WebSocket handshake.
-    """
+    """Accept and hold a WebSocket connection for a specific user."""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         token_user_id = int(payload.get("sub", -1))
@@ -82,11 +72,13 @@ async def websocket_endpoint(
 
     await manager.connect(user_id, websocket)
     try:
-        # Hold the connection open; the server only pushes TO the client.
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(user_id)
+
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
