@@ -10,13 +10,13 @@ The system is built using a modern backend architecture with **FastAPI**, **Mari
 
 ## Features
 
-* User registration and login
-* UI language selector with localization support (English, Arabic, Japanese)
-* Database-backed UI translations loaded through the backend i18n API
-* Create private or group conversations
-* Send and receive messages
-* Message storage in a relational database
-* Containerized deployment using Docker
+- User registration and login
+- UI language selector with localization support (English, Arabic, Japanese)
+- Database-backed UI translations loaded through the backend i18n API
+- Create private or group conversations
+- Send and receive messages
+- Message storage in a relational database
+- Containerized deployment using Docker
 
 ---
 
@@ -24,24 +24,24 @@ The system is built using a modern backend architecture with **FastAPI**, **Mari
 
 The application follows a layered architecture:
 
-* **Frontend (Client UI)** – Handles user interaction
-* **Backend (FastAPI)** – Processes API requests and business logic
-* **Database (MariaDB)** – Stores users, conversations, and messages
-* **Docker** – Containerized environment for deployment
+- **Frontend (Client UI)** – Handles user interaction
+- **Backend (FastAPI)** – Processes API requests and business logic
+- **Database (MariaDB)** – Stores users, conversations, and messages
+- **Docker** – Containerized environment for deployment
 
 ---
 
 ## Technologies Used
 
-| Technology         | Purpose                     |
-| ------------------ | --------------------------- |
-| FastAPI            | Backend API framework       |
-| Python             | Core programming language   |
-| MariaDB            | Relational database         |
-| SQLAlchemy         | ORM for database operations |
-| Docker             | Containerization            |
-| Git & GitHub       | Version control             |
-| Jenkins            | CI/CD automation            |
+| Technology   | Purpose                     |
+| ------------ | --------------------------- |
+| FastAPI      | Backend API framework       |
+| Python       | Core programming language   |
+| MariaDB      | Relational database         |
+| SQLAlchemy   | ORM for database operations |
+| Docker       | Containerization            |
+| Git & GitHub | Version control             |
+| Jenkins      | CI/CD automation            |
 
 ---
 
@@ -123,8 +123,8 @@ docker compose up --build
 
 This will start:
 
-* FastAPI backend
-* MariaDB database
+- FastAPI backend
+- MariaDB database
 
 ---
 
@@ -146,62 +146,62 @@ This will start:
 
 ### Messages
 
-| Method | Endpoint                                           | Description                       |
-| ------ | -------------------------------------------------- | --------------------------------- |
-| POST   | /api/messages/                                     | Send message                      |
-| GET    | /api/messages/                                     | Retrieve messages                 |
-| POST   | /api/conversations/{conversation_id}/messages      | Send message in a conversation    |
-| GET    | /api/conversations/{conversation_id}/messages      | Retrieve messages in conversation |
+| Method | Endpoint                                      | Description                       |
+| ------ | --------------------------------------------- | --------------------------------- |
+| POST   | /api/messages/                                | Send message                      |
+| GET    | /api/messages/                                | Retrieve messages                 |
+| POST   | /api/conversations/{conversation_id}/messages | Send message in a conversation    |
+| GET    | /api/conversations/{conversation_id}/messages | Retrieve messages in conversation |
 
 ### Localization (i18n)
 
-| Method | Endpoint               | Description                                              |
-| ------ | ---------------------- | -------------------------------------------------------- |
+| Method | Endpoint               | Description                                            |
+| ------ | ---------------------- | ------------------------------------------------------ |
 | GET    | /api/i18n/translations | Return localized UI dictionary for `en`, `ar`, or `ja` |
 
 Query parameters:
 
-* `locale` (optional): requested locale, defaults to `en`
-* `keys` (optional, repeatable): filter response to specific translation keys
+- `locale` (optional): requested locale, defaults to `en`
+- `keys` (optional, repeatable): filter response to specific translation keys
 
 Fallback behavior:
 
-* The endpoint applies fallback to English (`en`) per missing key.
-* Unsupported locales automatically fall back to `en`.
+- The endpoint applies fallback to English (`en`) for missing key.
+- Unsupported locales automatically fall back to `en`.
 
 Scope note:
 
-* This localization model applies to app-owned UI text only.
-* User-generated content (messages, usernames, bios) is not translated.
+- This localization model applies to app-owned UI text only.
+- User-generated content (messages, usernames, bios) is not translated.
 
 ## Database Localization Method
 
 The project uses a normalized key-value translation schema:
 
-* `i18n_keys` stores stable key names like `app.brand` or `auth.signIn`
-* `i18n_translations` stores localized values per key and locale
+- `i18n_keys` stores stable key names like `app.brand` or `auth.signIn`
+- `i18n_translations` stores localized values per key and locale
 
 Why this approach:
 
-* avoids schema changes when adding new languages
-* supports per-key fallback to English
-* keeps retrieval simple and index-friendly
+- avoids schema changes when adding new languages
+- supports per-key fallback to English
+- keeps retrieval simple and index-friendly
 
 Markdown ERD relationship explanation:
 
-* one `i18n_keys` row can have many `i18n_translations`
-* `i18n_translations.i18n_key_id` is a foreign key to `i18n_keys.i18n_key_id`
-* uniqueness is enforced for `(i18n_key_id, locale)`
+- one `i18n_keys` row can have many `i18n_translations`
+- `i18n_translations.i18n_key_id` is a foreign key to `i18n_keys.i18n_key_id`
+- uniqueness is enforced for `(i18n_key_id, locale)`
 
 Encoding and locale configuration:
 
-* MariaDB server runs with `utf8mb4` / `utf8mb4_unicode_ci`
-* localization tables are created with explicit `CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
-* backend MySQL connections use `charset=utf8mb4`
+- MariaDB server runs with `utf8mb4` / `utf8mb4_unicode_ci`
+- localization tables are created with explicit `CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+- backend MySQL connections use `charset=utf8mb4`
 
 Implementation report:
 
-* `docs/sprint_report/sprint6/sprint_6_db_localization_implementation.md`
+- `docs/sprint_report/sprint6/sprint_6_db_localization_implementation.md`
 
 ---
 
@@ -209,10 +209,10 @@ Implementation report:
 
 The system design includes the following diagrams:
 
-* ER Diagram
-* Use Case Diagram
-* Class Diagram
-* Activity Diagram
+- ER Diagram
+- Use Case Diagram
+- Class Diagram
+- Activity Diagram
 
 These diagrams illustrate the structure and interactions between the system components.
 
@@ -220,12 +220,9 @@ These diagrams illustrate the structure and interactions between the system comp
 
 ## Future Improvements
 
-* Add more supported languages/locales
-* Typing indicators and read receipts
-* Message notifications
-* File sharing support
-* User profile management
-* Mobile-friendly frontend
-
-
- 
+- Add more supported languages/locales
+- Typing indicators and read receipts
+- Message notifications
+- File sharing support
+- User profile management
+- Mobile-friendly frontend
