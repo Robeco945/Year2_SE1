@@ -22,6 +22,5 @@ export default {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/src/services/api.test.js',
   ],
 }
