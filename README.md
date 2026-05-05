@@ -505,10 +505,9 @@ Year2_SE1/
 
 | Name | Role |
 |------|------|
-| Roberto Caretto | Frontend development, UI design, CI/CD, code review |
-| Iida Saarinen | Backend API, database localisation, testing |
-| Vadim Kotukhov | Database design, backend integration, backlog management |
-| Chin Pei Wen | Unit testing, code coverage, product vision |
+| Roberto Caretto | Frontend development, UI design, CI/CD, code review, code coverage |
+| Iida Saarinen | Backend API, database localisation, testing, testing |
+| Vadim Kotukhov | Database design, backend integration, backlog management, docker deployment |
 
-**Course:** Software Engineering 1 (Year 2)  
+**Course:** Software Engineering 2 (Year 2)  
 **Semester:** Spring 2026
