@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_BASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) || 'http://localhost:8000/api'
+const API_BASE_URL =
+  (typeof window !== 'undefined' && window.__VITE_API_URL__) ||
+  'http://localhost:8000/api'
 
 // Derive WebSocket base URL from the HTTP base URL:
 //   http://host/api  →  ws://host
