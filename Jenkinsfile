@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = "${env['sonar-token']}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_REPO = 'year2_se1'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
