@@ -21,9 +21,9 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker-compose up -d --build'
+                        sh 'docker compose up -d --build'
                     } else {
-                        bat 'docker-compose up -d --build'
+                        bat 'docker compose up -d --build'
                     }
                 }
             }
@@ -33,11 +33,11 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
-                        sh 'docker-compose exec frontend npm run test:coverage'
+                        sh 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
+                        sh 'docker compose exec frontend npm run test:coverage'
                     } else {
-                        bat 'docker-compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
-                        bat 'docker-compose exec frontend npm run test:coverage'
+                        bat 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
+                        bat 'docker compose exec frontend npm run test:coverage'
                     }
                 }
             }
@@ -47,15 +47,15 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker cp $(docker-compose ps -q backend):/app/htmlcov ./htmlcov'
-                        sh 'docker cp $(docker-compose ps -q frontend):/app/coverage ./frontend-coverage'
+                        sh 'docker cp $(docker compose ps -q backend):/app/htmlcov ./htmlcov'
+                        sh 'docker cp $(docker compose ps -q frontend):/app/coverage ./frontend-coverage'
                     } else {
                         // Fix for Windows: two separate commands instead of $() substitution
                         bat '''
-                            FOR /F "tokens=*" %%i IN ('docker-compose ps -q backend') DO (
+                            FOR /F "tokens=*" %%i IN ('docker compose ps -q backend') DO (
                                 docker cp %%i:/app/htmlcov ./htmlcov
                             )
-                            FOR /F "tokens=*" %%i IN ('docker-compose ps -q frontend') DO (
+                            FOR /F "tokens=*" %%i IN ('docker compose ps -q frontend') DO (
                                 docker cp %%i:/app/coverage ./frontend-coverage
                             )
                         '''
@@ -156,9 +156,9 @@ pipeline {
         always {
             script {
                 if (isUnix()) {
-                    sh 'docker-compose down -v'
+                    sh 'docker compose down -v'
                 } else {
-                    bat 'docker-compose down -v'
+                    bat 'docker compose down -v'
                 }
             }
         }
