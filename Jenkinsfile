@@ -154,11 +154,13 @@ pipeline {
 
     post {
         always {
-            script {
-                if (isUnix()) {
-                    sh 'docker-compose down -v'
-                } else {
-                    bat 'docker-compose down -v'
+            node {
+                script {
+                    if (isUnix()) {
+                        sh 'docker-compose down -v'
+                    } else {
+                        bat 'docker-compose down -v'
+                    }
                 }
             }
         }
