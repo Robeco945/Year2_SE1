@@ -47,12 +47,19 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh 'docker cp $(docker compose ps -q backend):/app/htmlcov ./htmlcov'
+                        sh '''
+                            BACKEND_ID=$(docker compose ps -q backend)
+                            docker cp ${BACKEND_ID}:/app/htmlcov ./htmlcov
+                            docker cp ${BACKEND_ID}:/app/coverage.xml ./backend/coverage.xml
+                            sed -i 's|<source>/app</source>|<source>backend</source>|' ./backend/coverage.xml
+                        '''
                     } else {
                         bat '''
                             FOR /F "tokens=*" %%i IN ('docker compose ps -q backend') DO (
                                 docker cp %%i:/app/htmlcov ./htmlcov
+                                docker cp %%i:/app/coverage.xml ./backend/coverage.xml
                             )
+                            powershell -Command "(Get-Content backend/coverage.xml) -replace '<source>/app</source>', '<source>backend</source>' | Set-Content backend/coverage.xml"
                         '''
                     }
                 }
@@ -70,14 +77,16 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            chmod +x scripts/run-sonar-analysis.sh
-                            SONAR_TOKEN=${SONAR_TOKEN} ./scripts/run-sonar-analysis.sh
+                            docker compose --profile analysis run --rm \
+                                -e SONAR_HOST_URL=http://sonarqube:9000 \
+                                -e SONAR_TOKEN=${SONAR_TOKEN} \
+                                sonar-scanner
                         '''
                     } else {
                         withSonarQubeEnv('SonarQubeServer') {
                             bat '''
                                 docker compose --profile analysis run --rm ^
-                                    -e SONAR_HOST_URL=http://localhost:9000 ^
+                                    -e SONAR_HOST_URL=http://sonarqube:9000 ^
                                     -e SONAR_TOKEN=%SONAR_TOKEN% ^
                                     sonar-scanner
                             '''
