@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = credentials('sonar-token')
+        SONAR_TOKEN = "${env['sonar-token']}"
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_REPO = 'year2_se1'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
@@ -156,9 +156,9 @@ pipeline {
         always {
             catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                 script {
-                    try {
+                    if (isUnix()) {
                         sh 'docker-compose down -v'
-                    } catch (e) {
+                    } else {
                         bat 'docker-compose down -v'
                     }
                 }
