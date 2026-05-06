@@ -154,11 +154,11 @@ pipeline {
 
     post {
         always {
-            node {
+            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
                 script {
-                    if (isUnix()) {
+                    try {
                         sh 'docker-compose down -v'
-                    } else {
+                    } catch (e) {
                         bat 'docker-compose down -v'
                     }
                 }
