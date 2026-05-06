@@ -34,10 +34,10 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
-                        sh 'docker compose exec frontend npm run test:coverage'
+                        sh 'docker run --rm -v "$WORKSPACE/frontend:/app" -w /app node:20-alpine sh -c "npm install --silent && npm run test:coverage"'
                     } else {
                         bat 'docker compose exec backend pytest --cov=. --cov-report=xml --cov-report=html --junitxml=pytest.xml'
-                        bat 'docker compose exec frontend npm run test:coverage'
+                        bat 'docker run --rm -v "%WORKSPACE%/frontend:/app" -w /app node:20-alpine sh -c "npm install --silent && npm run test:coverage"'
                     }
                 }
             }
@@ -48,15 +48,10 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh 'docker cp $(docker compose ps -q backend):/app/htmlcov ./htmlcov'
-                        sh 'docker cp $(docker compose ps -q frontend):/app/coverage ./frontend-coverage'
                     } else {
-                        // Fix for Windows: two separate commands instead of $() substitution
                         bat '''
                             FOR /F "tokens=*" %%i IN ('docker compose ps -q backend') DO (
                                 docker cp %%i:/app/htmlcov ./htmlcov
-                            )
-                            FOR /F "tokens=*" %%i IN ('docker compose ps -q frontend') DO (
-                                docker cp %%i:/app/coverage ./frontend-coverage
                             )
                         '''
                     }
@@ -66,7 +61,7 @@ pipeline {
 
         stage('Archive Coverage') {
             steps {
-                archiveArtifacts artifacts: 'htmlcov/**,frontend-coverage/**', fingerprint: true
+                archiveArtifacts artifacts: 'htmlcov/**,frontend/coverage/**', fingerprint: true
             }
         }
 
