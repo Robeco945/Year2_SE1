@@ -97,9 +97,9 @@ services:
       - ./:/usr/src
     command: >
       sh -c 'if [ -n "$$SONAR_TOKEN" ]; then
-      sonar-scanner -Dsonar.host.url="$$SONAR_HOST_URL" -Dsonar.login="$$SONAR_TOKEN";
+      sonar-scanner -Dsonar.host.url="$$SONAR_HOST_URL" -Dsonar.working.directory=/tmp/.scannerwork -Dsonar.login="$$SONAR_TOKEN";
       else
-      sonar-scanner -Dsonar.host.url="$$SONAR_HOST_URL" -Dsonar.login=admin -Dsonar.password=admin;
+      sonar-scanner -Dsonar.host.url="$$SONAR_HOST_URL" -Dsonar.working.directory=/tmp/.scannerwork -Dsonar.login=admin -Dsonar.password=admin;
       fi'
 
 volumes:
