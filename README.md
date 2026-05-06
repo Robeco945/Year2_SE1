@@ -403,7 +403,8 @@ HTML report: `frontend/coverage/index.html`
 ### Run All Tests via Docker
 
 ```bash
-docker compose up -d --build
+docke-compose up -d --build(windows)
+docker compose up -d --build (linux)
 docker compose exec backend pytest --cov=. --cov-report=html
 docker compose exec frontend npm run test:coverage
 ```
