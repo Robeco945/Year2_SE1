@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        SONAR_TOKEN = credentials('sonar-token')
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials')
         DOCKERHUB_REPO = 'year2_se1'
         DOCKER_IMAGE_TAG = "${BUILD_NUMBER}"
@@ -79,18 +78,14 @@ pipeline {
                         sh '''
                             docker compose --profile analysis run --rm \
                                 -e SONAR_HOST_URL=http://sonarqube:9000 \
-                                -e SONAR_TOKEN=${SONAR_TOKEN} \
                                 sonar-scanner
                         '''
                     } else {
-                        withSonarQubeEnv('SonarQubeServer') {
-                            bat '''
-                                docker compose --profile analysis run --rm ^
-                                    -e SONAR_HOST_URL=http://sonarqube:9000 ^
-                                    -e SONAR_TOKEN=%SONAR_TOKEN% ^
-                                    sonar-scanner
-                            '''
-                        }
+                        bat '''
+                            docker compose --profile analysis run --rm ^
+                                -e SONAR_HOST_URL=http://sonarqube:9000 ^
+                                sonar-scanner
+                        '''
                     }
                 }
             }
@@ -103,7 +98,7 @@ pipeline {
                         echo "Waiting for SonarQube Quality Gate..."
                         sh '''
                             for i in {1..30}; do
-                                QUALITY_GATE=$(curl -s -u ${SONAR_TOKEN}: http://localhost:9000/api/qualitygates/project_status?projectKey=${PROJECT_KEY} | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+                                QUALITY_GATE=$(curl -s -u admin:admin http://localhost:9000/api/qualitygates/project_status?projectKey=${PROJECT_KEY} | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
                                 if [ ! -z "$QUALITY_GATE" ]; then
                                     echo "Quality Gate Status: $QUALITY_GATE"
                                     if [ "$QUALITY_GATE" != "OK" ]; then
